@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node
+node_modules/
+
+# Documents (prevent accidental metadata leaks)
+*.docx
+*.xlsx
+*.pptx
+
+# Amazon Quick / Enterprise
+.quickwork/
+quicksuite/
+*.enterprise-config
+*.profile
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Secrets
+*.pem
+*.key
+*.cert
+*.pfx
+
+# Logs
+*.log
+logs/
