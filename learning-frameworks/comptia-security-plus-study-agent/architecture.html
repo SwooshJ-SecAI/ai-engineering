@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CompTIA Security+ Study Agent -- Architecture Map</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d1117; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+  .container { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); overflow: hidden; }
+  svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+  .card rect { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3)); }
+</style>
+</head>
+<body>
+<div class="container">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 520" width="820" height="520">
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#484f58"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="820" height="520" fill="#0d1117"/>
+  
+  <!-- Title area -->
+  <text x="410.0" y="28" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">CompTIA Security+ Study Agent</text>
+  <text x="410.0" y="48" text-anchor="middle" fill="#8b949e" font-size="10" letter-spacing="2">LEARNING & CERTIFICATION</text>
+  
+  <!-- Horizontal rule under title -->
+  <line x1="30" y1="60" x2="790" y2="60" stroke="#21262d" stroke-width="1"/>
+  
+  <!-- Flow label -->
+  <text x="30" y="78" fill="#8b949e" font-size="9" letter-spacing="1.5">WORKFLOW</text>
+  
+  <!-- Arrows (behind cards) -->
+  
+    <path d="M145.0,126.0 C152.0,126.0 152.0,176.0 159.0,176.0" 
+          fill="none" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <path d="M274.0,176.0 C281.0,176.0 281.0,126.0 288.0,126.0" 
+          fill="none" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <path d="M403.0,126.0 C410.0,126.0 410.0,176.0 417.0,176.0" 
+          fill="none" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <path d="M532.0,176.0 C539.0,176.0 539.0,126.0 546.0,126.0" 
+          fill="none" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <path d="M661.0,126.0 C668.0,126.0 668.0,176.0 675.0,176.0" 
+          fill="none" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Step cards -->
+  
+    <g class="card" transform="translate(30.0,90)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">1</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">Topic Selection</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">SY0-701 domains</text>
+    </g>
+    <g class="card" transform="translate(159.0,140)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">2</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">Knowledge Base</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">Exam objectives</text>
+    </g>
+    <g class="card" transform="translate(288.0,90)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">3</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">Material Gen</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">Notes / quizzes</text>
+    </g>
+    <g class="card" transform="translate(417.0,140)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">4</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">Practice Test</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">Timed assessment</text>
+    </g>
+    <g class="card" transform="translate(546.0,90)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">5</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">Gap Analysis</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">Weak area ID</text>
+    </g>
+    <g class="card" transform="translate(675.0,140)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">6</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">Targeted Review</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">Focused drill</text>
+    </g>
+  
+  <!-- Infrastructure bar -->
+  <rect x="30" y="450" width="760" height="55" rx="6" ry="6" 
+        fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="42" y="466" fill="#8b949e" font-size="8" letter-spacing="1.5">INFRASTRUCTURE</text>
+  <line x1="40" y1="472" x2="780" y2="472" stroke="#21262d" stroke-width="1"/>
+  
+      <line x1="220.0" y1="460" x2="220.0" y2="500" stroke="#21262d" stroke-width="1"/>
+      <line x1="410.0" y1="460" x2="410.0" y2="500" stroke="#21262d" stroke-width="1"/>
+      <line x1="600.0" y1="460" x2="600.0" y2="500" stroke="#21262d" stroke-width="1"/>
+  
+      <text x="125.0" y="485" text-anchor="middle" fill="#8b949e" font-size="9">Amazon Quick</text>
+      <text x="315.0" y="485" text-anchor="middle" fill="#8b949e" font-size="9">Learning Framework</text>
+      <text x="505.0" y="485" text-anchor="middle" fill="#8b949e" font-size="9">Assessment Engine</text>
+      <text x="695.0" y="485" text-anchor="middle" fill="#8b949e" font-size="9">Progress Tracker</text>
+  
+  <!-- Version stamp -->
+  <text x="790" y="512" text-anchor="end" fill="#484f58" font-size="8">v1.0</text>
+  
+</svg>
+</div>
+</body>
+</html>
