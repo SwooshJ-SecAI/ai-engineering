@@ -7,7 +7,7 @@
 
 Architecture patterns, frameworks, and working implementations for enterprise AI agent systems. Covers agent design, parallel orchestration, skill authoring, knowledge graph construction, and natural language automation pipelines.
 
-Built with [Amazon Quick](https://amazon.com/quick).
+
 
 ---
 
