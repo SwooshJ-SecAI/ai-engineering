@@ -1,114 +1,61 @@
 # AI Engineering
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)
-![AWS](https://img.shields.io/badge/AWS-Cloud-FF9900?style=flat-square&logo=amazonaws&logoColor=white)
-![AI](https://img.shields.io/badge/Domain-AI%20Engineering-purple?style=flat-square)
-![Agents](https://img.shields.io/badge/Focus-Agent%20Architecture-green?style=flat-square)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazonwebservices&logoColor=white)
+![JSON](https://img.shields.io/badge/JSON-000000?style=flat&logo=json&logoColor=white)
+![Markdown](https://img.shields.io/badge/Markdown-000000?style=flat&logo=markdown&logoColor=white)
 
-Architecture patterns, frameworks, and working implementations for enterprise AI agent systems. Covers agent design, parallel orchestration, skill authoring, knowledge graph construction, and natural language automation pipelines.
-
-
+AI agent architecture, parallel orchestration, skill authoring, knowledge graph systems, and reusable learning frameworks.
 
 ---
 
-## Description
+## Overview
 
-This repository documents the engineering patterns and implementations behind 15+ production AI agents, 66+ custom skills, and the orchestration systems that coordinate them. The work represents a practical approach to enterprise AI engineering: designing agents that solve real operational problems, authoring reusable skills that encode domain expertise, and building knowledge systems that retain organizational intelligence.
+This repository documents the AI engineering side of the portfolio — how intelligent agents are designed, how reusable frameworks turn one-off automation into scalable systems, and how learning agents convert any subject into a structured study package. The focus is on architecture and repeatable methodology, not just individual tools.
 
-Every pattern in this repository has been validated through production deployment, not theoretical prototyping.
+**What's inside:**
 
-## Focus Areas
+- **10 AI and learning agents** — see the [Agent Catalog](./AGENTS.md)
+- **Agent design methodology** — two-tier framework for building task and spec-driven agents
+- **Reusable learning framework** — spawns subject-specific study agents from a common base
 
-### Agent Architecture
+---
 
-Design patterns for building AI agents that operate reliably in enterprise environments. Covers persona design, instruction engineering, reference file management, action connector integration, and the principles that separate effective agents from fragile prompt wrappers.
+## Structure
 
-**Key topics:**
-- Agent instruction authoring and refinement
-- Multi-agent coordination patterns
-- Context management and memory systems
-- Connector architecture for tool integration
-- Agent evaluation and iteration workflows
+### [agent-architecture/](./agent-architecture/)
+The methodology for designing new agents — a two-tier framework separating fast task agents (Vibe Coding) from rigorous spec-driven agents, plus the dashboard automation tier-classification system. See the [design decisions](./agent-architecture/DESIGN_DECISIONS.md) for the rationale.
 
-### Skill Authoring
+### [skill-authoring/](./skill-authoring/)
+Patterns and tooling for formalizing workflows into reusable SKILL.md definitions — frontmatter structure, deterministic vs. agentic step design, triggers, and the test-improve loop.
 
-The methodology for converting validated agent workflows into reusable, deterministic skill definitions. Covers the full lifecycle from workflow observation through SKILL.md formalization, evaluation generation, and the test-improve loop.
+### [knowledge-graphs/](./knowledge-graphs/)
+Knowledge graph systems — entity extraction, relationship modeling, and how structured organizational knowledge feeds agent context.
 
-**Key topics:**
-- Skill structure: frontmatter, deterministic steps, agentic steps
-- Trigger design and input specification
-- Procedure extraction from agent sessions
-- Evaluation authoring and execution
-- Skill improvement through iteration
+### [orchestration/](./orchestration/)
+Parallel orchestration patterns — decomposing complex work into concurrent sub-agents with tracked task groups, schema-driven results, and pipeline composition.
 
-### Knowledge Graph Systems
+### [learning-frameworks/](./learning-frameworks/)
+The reusable Learning Agents Framework and the subject-specific agents it produces (CompTIA Security+, SecAI+, AWS AI Practitioner, Agentic AI, and platform coaches). Multi-format output: notes, quizzes, notecards, and assessments. See the [design decisions](./learning-frameworks/DESIGN_DECISIONS.md).
 
-Patterns for building and querying organizational knowledge graphs that serve as persistent intelligence layers for AI agents. Covers entity design, relationship modeling, ontology construction, and integration with agent reasoning.
-
-**Key topics:**
-- Entity and relationship schema design
-- Ontology construction for domain-specific graphs
-- Search, expansion, and traversal patterns
-- Knowledge graph as agent memory substrate
-- Automated knowledge ingestion pipelines
-
-### Parallel Orchestration
-
-Architecture for decomposing complex tasks into independent sub-agents that execute concurrently, with tracked task groups and result aggregation. Covers the patterns that make parallel agent execution reliable and observable.
-
-**Key topics:**
-- Task decomposition strategies
-- Task group management and tracking
-- Result aggregation and conflict resolution
-- Error handling in parallel execution
-- Decision card patterns for orchestration approval
-
-### Learning Frameworks
-
-Systems for generating structured, interactive learning experiences from AI agents. Covers multi-stop learning journeys, adaptive content generation, assessment design, and the architecture that turns subject matter expertise into teachable formats.
-
-## Repository Structure
-
-```
-ai-engineering/
-|-- agent-architecture/      # Agent design patterns and instruction engineering
-|   |-- README.md
-|-- skill-authoring/         # Skill lifecycle and SKILL.md methodology
-|   |-- README.md
-|-- knowledge-graphs/        # Knowledge graph design and integration
-|   |-- README.md
-|-- orchestration/           # Parallel task orchestration patterns
-|   |-- README.md
-|-- learning-frameworks/     # AI-driven learning experience generation
-|   |-- README.md
-|-- .gitignore
-|-- README.md
-```
-
-## Scale
-
-| Metric               | Count |
-|----------------------|-------|
-| Custom Skills Built  | 66+   |
-| Production Agents    | 15+   |
-| Orchestration Flows  | 10+   |
-| Knowledge Domains    | 5+    |
+---
 
 ## Getting Started
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/ajohnson/ai-engineering.git
-   cd ai-engineering
-   ```
-2. Each directory contains its own README with detailed documentation
-3. Start with `agent-architecture/` for foundational patterns
-4. Review `skill-authoring/` to understand the skill lifecycle
-
-## License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+Each subfolder is self-contained with its own README. Start with [agent-architecture](./agent-architecture/) to understand the design methodology, then browse the [Agent Catalog](./AGENTS.md) to see it applied across ten agents.
 
 ---
 
-**Author:** Antonio Johnson | Security Engineer II / Enterprise AI Engineer
+## Built With
+
+Built with [Amazon Quick](https://github.com/SwooshJ-SecAI). Agents and frameworks were developed on the Amazon Quick platform and sanitized for public release.
+
+---
+
+## License
+
+MIT
+
+---
+
+*Part of the [SwooshJ-SecAI](https://github.com/SwooshJ-SecAI) security and AI engineering portfolio.*
