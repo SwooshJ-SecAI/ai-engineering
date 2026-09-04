@@ -1,0 +1,88 @@
+name: Scrub Guard
+
+# Server-side enforcement of the pre-publish scrubbing rules.
+# Scans every push and pull request for sensitive organizational patterns.
+# Fails the check (blocking merge when branch protection requires it) if any match is found.
+#
+# Install: place this file at .github/workflows/scrub-guard.yml in each repo.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  scrub-guard:
+    name: Sensitive Pattern Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for sensitive patterns
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          # Pattern label -> regex. Kept in sync with scrub_rules.json v2.0.
+          declare -A PATTERNS=(
+            ["Corporate name"]="Kelly[[:space:]]Benefits"
+            ["Corporate domain"]="kellybenefits"
+            ["Freshservice tenant"]="kellybenefits\.freshservice\.com"
+            ["SharePoint tenant"]="kellybenefits\.sharepoint"
+            ["AWS account ID"]="265886550675"
+            ["Enterprise profile ID"]="enterprise-7b0b44d61943"
+            ["QuickSuite ARN"]="arn:aws:quicksight:[a-z0-9-]+:[0-9]{12}:"
+            ["Enterprise username"]="\bajohnson\b"
+            ["Real name"]="Antonio[[:space:]]Johnson"
+            ["Employee name (Nwaosuagwu)"]="Nwaosuagwu"
+            ["Employee name (Sallese)"]="Sallese"
+            ["Employee name (Ward)"]="Russell[[:space:]]Ward"
+            ["Employee name (Caralle)"]="Caralle"
+            ["Employee name (Leal)"]="Samantha[[:space:]]Leal"
+            ["Corporate email"]="[A-Za-z0-9._%+-]+@kellybenefits\.com"
+            ["Physical address"]="1[[:space:]]Kelly[[:space:]]Way"
+            ["Locality"]="Sparks,?[[:space:]]MD"
+            ["Phone (410)"]="410[.-][0-9]{3}[.-][0-9]{4}"
+          )
+
+          # Files to skip: this workflow itself references the patterns as data.
+          SKIP_REGEX='(\.github/workflows/scrub-guard\.yml|SECURITY_CHECKLIST\.md|pre-commit-hook\.sh)'
+
+          VIOLATIONS=0
+          REPORT=""
+
+          # Enumerate tracked files, excluding skips and binary/vendor dirs.
+          FILES=$(git ls-files | grep -Ev "$SKIP_REGEX" | grep -Ev '\.(png|jpg|jpeg|gif|webp|ico|pdf|zip|woff2?)$' || true)
+
+          for f in $FILES; do
+            [ -f "$f" ] || continue
+            for label in "${!PATTERNS[@]}"; do
+              regex="${PATTERNS[$label]}"
+              # -I skips binary, -n gives line numbers, -E extended regex, -i case-insensitive
+              matches=$(grep -InEi "$regex" "$f" || true)
+              if [ -n "$matches" ]; then
+                VIOLATIONS=$((VIOLATIONS+1))
+                while IFS= read -r line; do
+                  REPORT="${REPORT}  [${label}] ${f}:${line%%:*}\n"
+                done <<< "$matches"
+              fi
+            done
+          done
+
+          if [ "$VIOLATIONS" -gt 0 ]; then
+            echo "::error::Scrub Guard found $VIOLATIONS sensitive-pattern violation(s)."
+            echo ""
+            echo "Sensitive organizational data detected in tracked files:"
+            echo ""
+            echo -e "$REPORT"
+            echo "Remediation: run the scrubbing pipeline (github-scrub-pipeline) on the"
+            echo "flagged files before pushing. See SECURITY_CHECKLIST.md (kept local)."
+            exit 1
+          fi
+
+          echo "Scrub Guard passed. No sensitive patterns detected across $(echo "$FILES" | wc -l | tr -d ' ') tracked files."
