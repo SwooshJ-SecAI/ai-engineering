@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Automation -- Architecture Map</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d1117; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+  .container { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); overflow: hidden; }
+  svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+  .card rect { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3)); }
+</style>
+</head>
+<body>
+<div class="container">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 520" width="820" height="520">
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#484f58"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="820" height="520" fill="#0d1117"/>
+  
+  <!-- Title area -->
+  <text x="410.0" y="28" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">Dashboard Automation</text>
+  <text x="410.0" y="48" text-anchor="middle" fill="#8b949e" font-size="10" letter-spacing="2">AI & PLATFORM</text>
+  
+  <!-- Horizontal rule under title -->
+  <line x1="30" y1="60" x2="790" y2="60" stroke="#21262d" stroke-width="1"/>
+  
+  <!-- Flow label -->
+  <text x="30" y="78" fill="#8b949e" font-size="9" letter-spacing="1.5">WORKFLOW</text>
+  
+  <!-- Arrows (behind cards) -->
+  
+    <path d="M145.0,126.0 C141.25,126.0 141.25,176.0 137.5,176.0" 
+          fill="none" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <path d="M252.5,176.0 C248.75,176.0 248.75,126.0 245.0,126.0" 
+          fill="none" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <path d="M360.0,126.0 C356.25,126.0 356.25,176.0 352.5,176.0" 
+          fill="none" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <path d="M467.5,176.0 C463.75,176.0 463.75,126.0 460.0,126.0" 
+          fill="none" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <path d="M575.0,126.0 C571.25,126.0 571.25,176.0 567.5,176.0" 
+          fill="none" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <path d="M682.5,176.0 C678.75,176.0 678.75,126.0 675.0,126.0" 
+          fill="none" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Step cards -->
+  
+    <g class="card" transform="translate(30.0,90)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">1</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">Intake</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">Requirements Q&A</text>
+    </g>
+    <g class="card" transform="translate(137.5,140)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">2</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">Data Class</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">Source analysis</text>
+    </g>
+    <g class="card" transform="translate(245.0,90)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">3</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">Tier Assign</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">Complexity rating</text>
+    </g>
+    <g class="card" transform="translate(352.5,140)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">4</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">Layout</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">Visual design</text>
+    </g>
+    <g class="card" transform="translate(460.0,90)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">5</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">Components</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">Widget selection</text>
+    </g>
+    <g class="card" transform="translate(567.5,140)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">6</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">Build</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">Auto-generation</text>
+    </g>
+    <g class="card" transform="translate(675.0,90)">
+      <rect width="115" height="72" rx="6" ry="6" 
+            fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="14" cy="16" r="9" fill="#1f6feb" stroke="none"/>
+      <text x="14" y="20" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">7</text>
+      <text x="57.5" y="38" text-anchor="middle" fill="#e6edf3" font-size="10" font-weight="600">QA Review</text>
+      <text x="57.5" y="54" text-anchor="middle" fill="#8b949e" font-size="8">Validation pass</text>
+    </g>
+  
+  <!-- Infrastructure bar -->
+  <rect x="30" y="450" width="760" height="55" rx="6" ry="6" 
+        fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="42" y="466" fill="#8b949e" font-size="8" letter-spacing="1.5">INFRASTRUCTURE</text>
+  <line x1="40" y1="472" x2="780" y2="472" stroke="#21262d" stroke-width="1"/>
+  
+      <line x1="182.0" y1="460" x2="182.0" y2="500" stroke="#21262d" stroke-width="1"/>
+      <line x1="334.0" y1="460" x2="334.0" y2="500" stroke="#21262d" stroke-width="1"/>
+      <line x1="486.0" y1="460" x2="486.0" y2="500" stroke="#21262d" stroke-width="1"/>
+      <line x1="638.0" y1="460" x2="638.0" y2="500" stroke="#21262d" stroke-width="1"/>
+  
+      <text x="106.0" y="485" text-anchor="middle" fill="#8b949e" font-size="9">Amazon Quick</text>
+      <text x="258.0" y="485" text-anchor="middle" fill="#8b949e" font-size="9">Highcharts</text>
+      <text x="410.0" y="485" text-anchor="middle" fill="#8b949e" font-size="9">Data Connectors</text>
+      <text x="562.0" y="485" text-anchor="middle" fill="#8b949e" font-size="9">Template Library</text>
+      <text x="714.0" y="485" text-anchor="middle" fill="#8b949e" font-size="9">QA Engine</text>
+  
+  <!-- Version stamp -->
+  <text x="790" y="512" text-anchor="end" fill="#484f58" font-size="8">v1.0</text>
+  
+</svg>
+</div>
+</body>
+</html>
