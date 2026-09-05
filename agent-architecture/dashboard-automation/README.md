@@ -1,6 +1,6 @@
 # Dashboard Automation
 
-> Guides end users through a complete 8-step dashboard build process â€” from intake questions through tier classification, specification, design, pipeline construction, validation, deployment, and ongoing maintenance.
+> Guides end users through a complete 8-step dashboard build process — from intake questions through tier classification, specification, design, pipeline construction, validation, deployment, and ongoing maintenance.
 
 ## Architecture
 
@@ -10,7 +10,7 @@
 
 ## Problem It Solves
 
-Guides end users through a complete 8-step dashboard build process â€” from intake questions through tier classification, specification, design, pipeline construction, validation, deployment, and ongoing maintenance. All work is executed end-to-end within Amazon Quick.
+Guides end users through a complete 8-step dashboard build process — from intake questions through tier classification, specification, design, pipeline construction, validation, deployment, and ongoing maintenance. All work is executed end-to-end within Amazon Quick.
 
 ## How It Works
 
