@@ -2,6 +2,12 @@
 
 > Meta-agent that helps design and architect new AI agents using a two-tier framework: Vibe Coding (fast task agents with SOPs and knowledge bases) and Spec-Driven (architecture-first design for complex, compliance, or multi-phase agents).
 
+## Architecture
+
+![Architecture diagram](./architecture.svg)
+
+*System-model diagram showing the agent's workflow, data flow, and supporting infrastructure.*
+
 ## Problem It Solves
 
 Meta-agent that helps design and architect new AI agents using a two-tier framework: Vibe Coding (fast task agents with SOPs and knowledge bases) and Spec-Driven (architecture-first design for complex, compliance, or multi-phase agents). Routes any agent idea through decision logic to determine the appropriate design tier, then guides construction through the correct framework phases. Produces architectural maps, instruction templates, and reference document structures. Grounded in the Agent Design Framework reference document.
