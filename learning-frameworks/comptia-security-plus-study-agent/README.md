@@ -2,6 +2,12 @@
 
 > CompTIA Security+ (SY0-701) study agent built on the Learning Agents Framework V2.
 
+## Architecture
+
+![Architecture diagram](./architecture.svg)
+
+*System-model diagram showing the agent's workflow, data flow, and supporting infrastructure.*
+
 ## Problem It Solves
 
 CompTIA Security+ (SY0-701) study agent built on the Learning Agents Framework V2. Turns any Security+ topic or the full exam into structured learning packages -- detailed notes, first-principles reasoning layer, architectural maps, notecards (RECALL/REASONING/INVALIDATION), and exam-style quizzes (multiple-choice + PBQ simulations) weighted to the official domain blueprint. Every concept is deconstructed through the Universal Reasoning Framework pipeline before packaging.
