@@ -2,6 +2,12 @@
 
 > Standalone AWS Certified AI Practitioner (AIF-C01) study agent built on the Learning Agents Framework V2.
 
+## Architecture
+
+![Architecture diagram](./architecture.svg)
+
+*System-model diagram showing the agent's workflow, data flow, and supporting infrastructure.*
+
 ## Problem It Solves
 
 Standalone AWS Certified AI Practitioner (AIF-C01) study agent built on the Learning Agents Framework V2. Turns any AIF-C01 topic or the full exam into structured learning packages -- detailed notes, first-principles reasoning layer, architectural maps, notecards (RECALL/REASONING/INVALIDATION), and tiered exam-style quizzes -- weighted to the five official domains (D1 20%, D2 24%, D3 28%, D4 14%, D5 14%). Every concept is deconstructed through the Universal Reasoning Framework pipeline before packaging. Coaches the answer-elimination method and mirrors AWS scenario question styles.
