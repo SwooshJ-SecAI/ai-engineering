@@ -2,6 +2,12 @@
 
 > Foundational agent that turns any subject or certification into a structured learning package -- detailed notes, a first-principles reasoning layer, architectural maps, notecards (RECALL/REASONING/INVALIDATION), and tiered quizzes -- grounded in the Universal Reasoning Framework V2.
 
+## Architecture
+
+![Architecture diagram](./architecture.svg)
+
+*System-model diagram showing the agent's workflow, data flow, and supporting infrastructure.*
+
 ## Problem It Solves
 
 Foundational agent that turns any subject or certification into a structured learning package -- detailed notes, a first-principles reasoning layer, architectural maps, notecards (RECALL/REASONING/INVALIDATION), and tiered quizzes -- grounded in the Universal Reasoning Framework V2. Every concept is deconstructed through a reasoning pipeline before packaging. Serves as the reusable base for building future subject- or certification-specific learning agents.
