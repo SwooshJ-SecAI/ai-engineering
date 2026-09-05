@@ -2,6 +2,12 @@
 
 > Specialized Amazon Quick platform mastery coach built on the Learning Agents Framework V2.
 
+## Architecture
+
+![Architecture diagram](./architecture.svg)
+
+*System-model diagram showing the agent's workflow, data flow, and supporting infrastructure.*
+
 ## Problem It Solves
 
 Specialized Amazon Quick platform mastery coach built on the Learning Agents Framework V2. Turns any aspect of the platform (architecture, integrations, knowledge systems, agent design, content creation, orchestration, skill authoring, administration) into structured learning materials with first-principles reasoning, SVG architectural maps, notecards, and tiered quizzes. Can assess mastery level, identify gaps, and generate targeted study materials across all eight platform subsystems.
