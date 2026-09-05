@@ -18,10 +18,15 @@ This repository documents the AI engineering side of the portfolio — how intel
 - **10 AI and learning agents** — see the [Agent Catalog](./AGENTS.md)
 - **Agent design methodology** — two-tier framework for building task and spec-driven agents
 - **Reusable learning framework** — spawns subject-specific study agents from a common base
+- **Documented frameworks** — see the [Frameworks collection](./frameworks/)
+- **Architecture maps** — see the [visual index](./ARCHITECTURE_MAPS.md)
 
 ---
 
 ## Structure
+
+### [frameworks/](./frameworks/)
+The engines behind the agents — documented as first-class, reusable artifacts. Includes the [Learning Agents Framework](./frameworks/learning-agents-framework/) (with [capability examples](./frameworks/learning-agents-framework/CAPABILITY_EXAMPLES.md) and browsable [study packages](./frameworks/learning-agents-framework/study-packages/) you can study from directly), the [Agent Design Framework](./frameworks/agent-design-framework/), the [Universal Reasoning Framework](./frameworks/universal-reasoning-framework/), and the [Architecture Map Design System](./frameworks/architecture-map-design-system/).
 
 ### [agent-architecture/](./agent-architecture/)
 The methodology for designing new agents — a two-tier framework separating fast task agents (Vibe Coding) from rigorous spec-driven agents, plus the dashboard automation tier-classification system. See the [design decisions](./agent-architecture/DESIGN_DECISIONS.md) for the rationale.
