@@ -2,6 +2,12 @@
 
 > Standalone CompTIA SecAI+ (CY0-001) AI-security study agent built on the Learning Agents Framework V2.
 
+## Architecture
+
+![Architecture diagram](./architecture.svg)
+
+*System-model diagram showing the agent's workflow, data flow, and supporting infrastructure.*
+
 ## Problem It Solves
 
 Standalone CompTIA SecAI+ (CY0-001) AI-security study agent built on the Learning Agents Framework V2. Turns any AI-security topic or the full exam into structured learning packages -- detailed notes, first-principles reasoning layer, architectural maps, notecards (RECALL/REASONING/INVALIDATION), and exam-style quizzes with tiered difficulty -- grounded in a 26-section / 183-topic course syllabus. Every concept is deconstructed through the Universal Reasoning Framework pipeline before packaging.
