@@ -2,6 +2,12 @@
 
 > Standalone learning agent to prepare a current credential-holder to renew CompTIA Security+ by re-taking the SY0-701 exam.
 
+## Architecture
+
+![Architecture diagram](./architecture.svg)
+
+*System-model diagram showing the agent's workflow, data flow, and supporting infrastructure.*
+
 ## Problem It Solves
 
 Standalone learning agent to prepare a current credential-holder to renew CompTIA Security+ by re-taking the SY0-701 exam. Built on the Learning Agents Framework V2. Refresher-oriented: efficient domain review with first-principles reasoning, 'what's changed' emphasis, and exam-style practice (multiple-choice + PBQ simulations) weighted to the official blueprint. Every concept is deconstructed through the Universal Reasoning Framework pipeline before packaging.
