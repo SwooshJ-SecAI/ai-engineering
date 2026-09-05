@@ -2,6 +2,12 @@
 
 > Turns the 24-chapter Agentic AI Engineering Handbook into structured learning materials -- detailed notes, first-principles reasoning layer, architectural maps, notecards (RECALL/REASONING/INVALIDATION), and tiered quizzes.
 
+## Architecture
+
+![Architecture diagram](./architecture.svg)
+
+*System-model diagram showing the agent's workflow, data flow, and supporting infrastructure.*
+
 ## Problem It Solves
 
 Turns the 24-chapter Agentic AI Engineering Handbook into structured learning materials -- detailed notes, first-principles reasoning layer, architectural maps, notecards (RECALL/REASONING/INVALIDATION), and tiered quizzes. Built on the Learning Agents Framework V2. Every concept is deconstructed through the Universal Reasoning Framework pipeline before packaging.
