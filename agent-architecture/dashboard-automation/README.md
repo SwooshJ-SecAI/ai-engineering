@@ -2,6 +2,12 @@
 
 > Guides end users through a complete 8-step dashboard build process â€” from intake questions through tier classification, specification, design, pipeline construction, validation, deployment, and ongoing maintenance.
 
+## Architecture
+
+![Architecture diagram](./architecture.svg)
+
+*System-model diagram showing the agent's workflow, data flow, and supporting infrastructure.*
+
 ## Problem It Solves
 
 Guides end users through a complete 8-step dashboard build process â€” from intake questions through tier classification, specification, design, pipeline construction, validation, deployment, and ongoing maintenance. All work is executed end-to-end within Amazon Quick.
