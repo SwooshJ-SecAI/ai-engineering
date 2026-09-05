@@ -2,6 +2,12 @@
 
 > Specialized learning agent built on the Learning Agents Framework V2.
 
+## Architecture
+
+![Architecture diagram](./architecture.svg)
+
+*System-model diagram showing the agent's workflow, data flow, and supporting infrastructure.*
+
 ## Problem It Solves
 
 Specialized learning agent built on the Learning Agents Framework V2. Fixed subject: Amazon Quick skill authoring -- SKILL.md structure, deterministic/agentic step classification, trigger design, input parameterization, eval generation, the test-improve loop, and plugin packaging. Produces V2 learning packages (notes, reasoning layer, SVG architectural maps, notecards, quizzes) and assesses existing agents for skill extraction readiness.
