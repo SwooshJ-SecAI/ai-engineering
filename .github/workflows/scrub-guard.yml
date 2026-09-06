@@ -9,6 +9,10 @@ name: Scrub Guard
 # data (email/ARN/account-id/profile-id/path patterns) so the guard itself never
 # becomes a source of the data it protects.
 #
+# Documentation-safe values (RFC 2606 example.* domains, elided placeholder
+# paths) are allowlisted so teaching material about prompt injection etc. does
+# not trip the guard.
+#
 # Install: place this file at .github/workflows/scrub-guard.yml in each repo.
 
 on:
@@ -48,6 +52,11 @@ jobs:
             ["Generic API/secret token"]="(gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})"
           )
 
+          # Allowlist of documentation-safe values that must NOT trip the guard:
+          #   - RFC 2606 reserved example domains (example.com/.net/.org)
+          #   - Elided/placeholder user paths (C:\Users\... , \Users\<user>)
+          ALLOWLIST='@example\.(com|net|org)|Users\\(\.\.\.|<)'
+
           # Files to skip: this workflow references pattern shapes as data.
           SKIP_REGEX='(\.github/workflows/scrub-guard\.yml|SECURITY_CHECKLIST\.md|pre-commit-hook\.sh)'
 
@@ -61,7 +70,7 @@ jobs:
             [ -f "$f" ] || continue
             for label in "${!PATTERNS[@]}"; do
               regex="${PATTERNS[$label]}"
-              matches=$(grep -InE "$regex" "$f" || true)
+              matches=$(grep -InE "$regex" "$f" | grep -Ev "$ALLOWLIST" || true)
               if [ -n "$matches" ]; then
                 VIOLATIONS=$((VIOLATIONS+1))
                 while IFS= read -r line; do
