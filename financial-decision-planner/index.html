@@ -1,0 +1,2673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Decision Planner</title>
+<script src="/vendor/highcharts/highcharts.js"></script>
+<script src="/vendor/highcharts/modules/accessibility.js"></script>
+<style>
+:root{
+  --bg:#0d1117; --bg2:#010409; --surface:#161b22; --surface2:#1c2129;
+  --text:#e6edf3; --text2:#adbac7; --muted:#768390; --border:#30363d; --border2:#21262d;
+  --accent:#2f81f7; --accent2:#1f6feb;
+  --green:#3fb950; --green-bg:#12261a; --green-bd:#238636;
+  --amber:#d29922; --amber-bg:#2b2412; --amber-bd:#9e6a03;
+  --red:#f85149; --red-bg:#2c1414; --red-bd:#da3633;
+  --critical:#ff6b6b; --critical-bg:#3d1414;
+  --mono:'SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --radius:10px; --radius-sm:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* Layout */
+.app{display:flex;min-height:100vh}
+.sidebar{width:236px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:40;transition:transform .2s ease}
+.brand{padding:18px 18px 14px;border-bottom:1px solid var(--border)}
+.brand h1{font-size:15px;font-weight:600;letter-spacing:.2px}
+.brand .tag{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
+.nav{flex:1;overflow-y:auto;padding:10px 8px}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:none;color:var(--text2);padding:9px 12px;border-radius:var(--radius-sm);font-size:13.5px;cursor:pointer;font-family:var(--sans);margin-bottom:2px;transition:background .12s,color .12s}
+.nav button:hover{background:var(--surface);color:var(--text)}
+.nav button.active{background:var(--surface2);color:var(--text);font-weight:600;box-shadow:inset 2px 0 0 var(--accent)}
+.nav .nav-ico{width:16px;height:16px;flex:0 0 16px;opacity:.8}
+.sidebar-foot{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+.sidebar-foot .userchip{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sidebar-foot .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+
+.main{flex:1;margin-left:236px;min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:30;background:rgba(13,17,23,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px}
+.topbar h2{font-size:18px;font-weight:600}
+.topbar .sub{font-size:12px;color:var(--muted);margin-top:1px}
+.topbar .spacer{flex:1}
+.hamburger{display:none;background:var(--surface);border:1px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:var(--radius-sm);cursor:pointer;font-size:16px}
+.content{padding:24px;max-width:1400px;width:100%}
+.view{display:none;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Components */
+.banner{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:var(--radius-sm);padding:10px 14px;font-size:12.5px;color:var(--text2);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.banner.info{border-left-color:var(--accent)}
+.banner .b-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:20px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)}
+.grid{display:grid;gap:16px}
+.cards{grid-template-columns:repeat(auto-fill,minmax(212px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+.card .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:6px}
+.card .val{font-size:26px;font-weight:600;font-family:var(--mono);margin-top:8px;letter-spacing:-.5px}
+.card .meta{font-size:12px;color:var(--text2);margin-top:5px}
+.card .val.pos{color:var(--green)} .card .val.neg{color:var(--red)}
+.section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px}
+.section h3{font-size:14px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:9px}
+.section .desc{font-size:12px;color:var(--muted);margin-bottom:16px}
+.section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;border:1px solid}
+.badge.green{background:var(--green-bg);color:var(--green);border-color:var(--green-bd)}
+.badge.amber{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-bd)}
+.badge.red{background:var(--red-bg);color:var(--red);border-color:var(--red-bd)}
+.badge.critical{background:var(--critical-bg);color:var(--critical);border-color:var(--red-bd)}
+.badge.gray{background:var(--surface2);color:var(--muted);border-color:var(--border)}
+.badge.blue{background:#0d2440;color:var(--accent);border-color:var(--accent2)}
+.badge.synthetic{background:var(--surface2);color:var(--muted);border-color:var(--border);text-transform:uppercase;letter-spacing:.04em;font-size:9.5px}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--border2);color:var(--text2)}
+tr:hover td{background:var(--surface2)}
+td.num,th.num{text-align:right;font-family:var(--mono)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius)}
+.tbl-wrap table th{background:var(--bg2)}
+
+button.btn{background:var(--accent2);color:#fff;border:1px solid var(--accent2);padding:8px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:filter .12s}
+button.btn:hover{filter:brightness(1.12)}
+button.btn.sec{background:var(--surface2);color:var(--text);border-color:var(--border)}
+button.btn.ghost{background:transparent;color:var(--text2);border-color:var(--border)}
+button.btn.danger{background:transparent;color:var(--red);border-color:var(--red-bd)}
+button.btn.sm{padding:5px 10px;font-size:12px}
+button.btn:disabled{opacity:.45;cursor:not-allowed}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+
+input,select,textarea{background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:var(--radius-sm);font-size:13px;font-family:var(--sans);width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+label.fld{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.field{margin-bottom:0}
+input[type=range]{padding:0;accent-color:var(--accent)}
+
+.pill-tabs{display:inline-flex;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:3px;gap:2px}
+.pill-tabs button{background:transparent;border:none;color:var(--text2);padding:5px 14px;border-radius:16px;font-size:12.5px;cursor:pointer;font-family:var(--sans)}
+.pill-tabs button.active{background:var(--surface2);color:var(--text);font-weight:600}
+
+.bar-track{height:7px;background:var(--surface2);border-radius:4px;overflow:hidden;margin-top:7px}
+.bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .4s ease}
+.bar-fill.green{background:var(--green)} .bar-fill.amber{background:var(--amber)} .bar-fill.red{background:var(--red)}
+
+.kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border2);font-size:13px}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--muted)} .kv .v{font-family:var(--mono);color:var(--text)}
+
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
+
+/* AI assistant */
+.fab{position:fixed;right:22px;bottom:22px;z-index:60;width:54px;height:54px;border-radius:50%;background:var(--accent2);border:none;color:#fff;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center}
+.fab svg{width:24px;height:24px}
+.assistant{position:fixed;right:22px;bottom:22px;z-index:61;width:400px;max-width:calc(100vw - 32px);height:560px;max-height:calc(100vh - 40px);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 12px 40px rgba(0,0,0,.5);display:none;flex-direction:column;overflow:hidden}
+.assistant.open{display:flex}
+.asst-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.asst-head .t{font-size:14px;font-weight:600}
+.asst-head .s{font-size:11px;color:var(--muted)}
+.asst-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:88%;padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.55}
+.msg.user{align-self:flex-end;background:var(--accent2);color:#fff;border-bottom-right-radius:3px}
+.msg.bot{align-self:flex-start;background:var(--surface2);border:1px solid var(--border);border-bottom-left-radius:3px}
+.msg.bot .calc{font-family:var(--mono);font-size:11.5px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin:8px 0;white-space:pre-wrap;color:var(--text2)}
+.msg.bot .tag{display:inline-block;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:10px;margin-right:5px}
+.msg.bot .tag.v{background:var(--green-bg);color:var(--green)} .msg.bot .tag.e{background:var(--amber-bg);color:var(--amber)}
+.asst-foot{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px}
+.asst-foot input{flex:1}
+.asst-suggest{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 12px}
+.asst-suggest button{background:var(--bg2);border:1px solid var(--border);color:var(--text2);font-size:11px;padding:5px 9px;border-radius:14px;cursor:pointer;font-family:var(--sans)}
+.asst-suggest button:hover{border-color:var(--accent);color:var(--text)}
+
+.disabled-panel{border:1px dashed var(--border);border-radius:var(--radius);padding:40px 24px;text-align:center;background:repeating-linear-gradient(45deg,transparent,transparent 10px,rgba(255,255,255,.012) 10px,rgba(255,255,255,.012) 20px)}
+.disabled-panel .ico{font-size:30px;opacity:.4;margin-bottom:10px}
+.disabled-panel h4{font-size:15px;margin-bottom:6px}
+.disabled-panel p{font-size:12.5px;color:var(--muted);max-width:440px;margin:0 auto 4px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.chart-box{height:300px}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:11px 18px;border-radius:var(--radius-sm);font-size:13px;z-index:100;opacity:0;transition:all .25s;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.green{border-left:3px solid var(--green)} .toast.red{border-left:3px solid var(--red)} .toast.amber{border-left:3px solid var(--amber)}
+
+.modal-bg{position:fixed;inset:0;background:rgba(1,4,9,.7);z-index:80;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-size:15px}
+.modal-body{padding:20px}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.x-btn{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+
+.mini{font-size:11px;color:var(--muted)}
+.stat-inline{display:flex;gap:22px;flex-wrap:wrap;margin-top:4px}
+.stat-inline .si .n{font-family:var(--mono);font-size:18px;font-weight:600}
+.stat-inline .si .l{font-size:11px;color:var(--muted)}
+hr.sep{border:none;border-top:1px solid var(--border2);margin:16px 0}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .hamburger{display:block}
+  .two-col,.three-col{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <h1>Financial Decision Planner</h1>
+      <div class="tag">Private &middot; Local Prototype</div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sidebar-foot">
+      <div class="userchip"><span class="dot"></span><span id="userLabel">local user</span></div>
+      <div>All data stored privately on this device.</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="hamburger" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div>
+        <h2 id="viewTitle">Overview</h2>
+        <div class="sub" id="viewSub">Your financial position at a glance</div>
+      </div>
+      <div class="spacer"></div>
+      <span class="badge synthetic" title="All records shown are synthetic demonstration data">Synthetic demo data</span>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- AI assistant -->
+<button class="fab" id="fab" onclick="Assistant.toggle()" title="Ask the financial assistant">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+<div class="assistant" id="assistant">
+  <div class="asst-head">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg>
+    <div style="flex:1"><div class="t">Financial Assistant</div><div class="s">Grounded in your stored data only</div></div>
+    <button class="x-btn" onclick="Assistant.toggle()">&times;</button>
+  </div>
+  <div class="asst-body" id="asstBody"></div>
+  <div class="asst-suggest" id="asstSuggest"></div>
+  <div class="asst-foot">
+    <input id="asstInput" placeholder="Ask about your finances..." onkeydown="if(event.key==='Enter')Assistant.send()">
+    <button class="btn" onclick="Assistant.send()">Ask</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== app.js (inlined) ===== */
+/* ============================================================
+   Financial Decision Planner  —  private, user-scoped prototype
+   All data is SYNTHETIC and stored locally (localStorage),
+   scoped per user_id. No shared storage is used.
+   ============================================================ */
+
+'use strict';
+
+/* ---------- User scope & storage ---------- */
+const USER_ID = 'local-user-001';                 // user-scoped key namespace
+const STORE_KEY = 'fdp::' + USER_ID + '::v1';
+const nowISO = () => new Date().toISOString();
+const fmtMoney = (n) => (n<0?'-':'') + '$' + Math.abs(Math.round(n)).toLocaleString('en-US');
+const fmtMoney2 = (n) => (n<0?'-':'') + '$' + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtPct = (n,d=1) => (n>=0?'':'') + n.toFixed(d) + '%';
+const fmtDate = (iso) => { if(!iso) return '\u2014'; const d=new Date(iso); return d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}); };
+const uid = (p='id') => p+'-'+Math.random().toString(36).slice(2,9);
+const clone = (o) => JSON.parse(JSON.stringify(o));
+
+/* ---------- Synthetic seed data (clearly labelled) ---------- */
+function seedData(){
+  const audit = [];
+  const stamp = (o)=>Object.assign({created_at:nowISO(),updated_at:nowISO(),source:'synthetic-seed',verification_status:'verified',user_id:USER_ID},o);
+  return {
+    meta:{ synthetic:true, created_at:nowISO(), user_id:USER_ID, schema:'v1' },
+    settings:{
+      user_id:USER_ID,
+      display_name:'Alex Rivera (synthetic)',
+      currency:'USD',
+      thresholds:{ green:5, amber:10 },      // % unfavorable bands; >amber = red; cashflow<0 = critical
+      assumptions:{
+        default_return:0.06,                  // annual expected return for goals
+        inflation:0.03,
+        emergency_fund_target_months:6,
+        maintenance_reserve_pct:0.01,         // % of home price / yr
+        default_rate:0.0675,                  // mortgage APR
+        default_term_years:30,
+        pmi_annual_pct:0.0075,                // if down payment < 20%
+        front_end_max:0.28,
+        back_end_max:0.36,
+        conservative_back_end:0.28,
+        balanced_back_end:0.33
+      },
+      created_at:nowISO(), updated_at:nowISO(), source:'synthetic-seed', verification_status:'verified'
+    },
+    income:[
+      stamp({id:uid('inc'), name:'Primary salary (net)', gross:7200, amount:5450, cadence:'monthly'}),
+      stamp({id:uid('inc'), name:'Freelance (net)', gross:900, amount:720, cadence:'monthly'})
+    ],
+    budget:[
+      // type: fixed | variable | debt | savings | sinking
+      stamp({id:uid('cat'), name:'Rent', type:'fixed', budgeted:1850}),
+      stamp({id:uid('cat'), name:'Utilities', type:'fixed', budgeted:240}),
+      stamp({id:uid('cat'), name:'Insurance (auto+health)', type:'fixed', budgeted:310}),
+      stamp({id:uid('cat'), name:'Phone & internet', type:'fixed', budgeted:145}),
+      stamp({id:uid('cat'), name:'Groceries', type:'variable', budgeted:620}),
+      stamp({id:uid('cat'), name:'Dining & takeout', type:'variable', budgeted:280}),
+      stamp({id:uid('cat'), name:'Transportation & fuel', type:'variable', budgeted:210}),
+      stamp({id:uid('cat'), name:'Entertainment', type:'variable', budgeted:160}),
+      stamp({id:uid('cat'), name:'Shopping & personal', type:'variable', budgeted:190}),
+      stamp({id:uid('cat'), name:'Student loan', type:'debt', budgeted:380, balance:14200, apr:5.5, minimum:280}),
+      stamp({id:uid('cat'), name:'Auto loan', type:'debt', budgeted:410, balance:12800, apr:6.9, minimum:410}),
+      stamp({id:uid('cat'), name:'Credit card', type:'debt', budgeted:250, balance:3600, apr:22.9, minimum:110}),
+      stamp({id:uid('cat'), name:'Emergency fund', type:'savings', budgeted:400}),
+      stamp({id:uid('cat'), name:'Retirement (Roth)', type:'savings', budgeted:500}),
+      stamp({id:uid('cat'), name:'Home down-payment fund', type:'sinking', budgeted:600}),
+      stamp({id:uid('cat'), name:'Car maintenance sinking', type:'sinking', budgeted:90}),
+      stamp({id:uid('cat'), name:'Annual gifts sinking', type:'sinking', budgeted:75})
+    ],
+    // actuals keyed by month (YYYY-MM) -> {catId: actual}
+    actuals:{},
+    transactions:[],   // filled below
+    accounts:[
+      stamp({id:uid('acct'), name:'Checking (synthetic)', mask:'****4821', type:'checking', balance:4180}),
+      stamp({id:uid('acct'), name:'Savings (synthetic)', mask:'****9930', type:'savings', balance:11400}),
+      stamp({id:uid('acct'), name:'Brokerage (synthetic)', mask:'****2277', type:'investment', balance:23850}),
+      stamp({id:uid('acct'), name:'Down-payment fund', mask:'****6644', type:'savings', balance:9600})
+    ],
+    goals:[
+      stamp({id:uid('goal'), name:'6-month emergency fund', target:22800, current:11400, target_date:addMonths(6), priority:'High', exp_return:0.03}),
+      stamp({id:uid('goal'), name:'Home down payment', target:60000, current:9600, target_date:addMonths(30), priority:'High', exp_return:0.04}),
+      stamp({id:uid('goal'), name:'New car fund', target:12000, current:2100, target_date:addMonths(20), priority:'Medium', exp_return:0.03}),
+      stamp({id:uid('goal'), name:'Vacation 2027', target:5000, current:900, target_date:addMonths(11), priority:'Low', exp_return:0.02})
+    ],
+    mortgage:{
+      gross_monthly:8100, net_monthly:6170, existing_debt:1040,
+      rate:0.0675, term_years:30,
+      property_tax_annual:5400, insurance_annual:1560, hoa_monthly:0, pmi_annual_pct:0.0075,
+      down_payment:60000, closing_pct:0.03, maintenance_pct:0.01, emergency_required:13600,
+      home_price:340000,
+      created_at:nowISO(), updated_at:nowISO(), source:'synthetic-seed', verification_status:'verified'
+    },
+    scenarios:[],   // user-created; baseline computed live
+    documents:[],   // populated with synthetic pending-review records
+    reconcile:[],   // review queue
+    audit:[]
+  };
+}
+
+function addMonths(m){ const d=new Date(); d.setMonth(d.getMonth()+m); return d.toISOString(); }
+function ymNow(off=0){ const d=new Date(); d.setMonth(d.getMonth()+off); return d.toISOString().slice(0,7); }
+
+/* Synthetic transactions across recent months + edge cases for variance flags */
+function seedTransactions(db){
+  const cats = db.budget;
+  const catByName = (n)=>cats.find(c=>c.name===n);
+  const months = [ymNow(-2), ymNow(-1), ymNow(0)];
+  const tx = [];
+  const push = (o)=>tx.push(Object.assign({id:uid('tx'),created_at:nowISO(),updated_at:nowISO(),source:'synthetic-seed',verification_status:'verified',user_id:USER_ID,flags:[]},o));
+  const vendors = {
+    'Groceries':['Whole Foods','Trader Joes','Safeway','Costco'],
+    'Dining & takeout':['Chipotle','Local Bistro','DoorDash','Starbucks'],
+    'Transportation & fuel':['Shell','Chevron','Uber','Transit Pass'],
+    'Entertainment':['Netflix','AMC Theaters','Spotify','Steam'],
+    'Shopping & personal':['Amazon','Target','REI','Nordstrom'],
+    'Utilities':['City Power','Water Dept'],
+    'Rent':['Maple Grove Apts'],
+    'Insurance (auto+health)':['StateWide Insurance'],
+    'Phone & internet':['Verizon','Xfinity']
+  };
+  months.forEach((ym,mi)=>{
+    Object.keys(vendors).forEach(cn=>{
+      const cat=catByName(cn); if(!cat) return;
+      const n = (cn==='Rent'||cn==='Insurance (auto+health)'||cn==='Phone & internet')?1:(cn==='Utilities'?2:3);
+      let spent=0;
+      for(let i=0;i<n;i++){
+        const v=vendors[cn][i%vendors[cn].length];
+        let amt = cat.budgeted/n * (0.7+Math.random()*0.7);
+        amt = Math.round(amt*100)/100;
+        spent+=amt;
+        const day = String(2+Math.floor(Math.random()*25)).padStart(2,'0');
+        push({date:ym+'-'+day, description:v, merchant:v, amount:amt, catId:cat.id, category:cn, month:ym, type:'debit'});
+      }
+    });
+  });
+  // Edge cases (current month) for variance/anomaly flags:
+  const g=catByName('Groceries'), d=catByName('Dining & takeout'), e=catByName('Entertainment');
+  const cm=ymNow(0);
+  // Duplicate pair
+  push({date:cm+'-14', description:'Costco', merchant:'Costco', amount:142.88, catId:g.id, category:'Groceries', month:cm, type:'debit', flags:['duplicate']});
+  push({date:cm+'-14', description:'Costco', merchant:'Costco', amount:142.88, catId:g.id, category:'Groceries', month:cm, type:'debit', flags:['duplicate']});
+  // Unusual large
+  push({date:cm+'-19', description:'Best Buy - laptop', merchant:'Best Buy', amount:1284.00, catId:catByName('Shopping & personal').id, category:'Shopping & personal', month:cm, type:'debit', flags:['unusual']});
+  // Uncategorized
+  push({date:cm+'-20', description:'SQ *UNKNOWN VENDOR', merchant:'Square', amount:64.50, catId:null, category:null, month:cm, type:'debit', flags:['uncategorized']});
+  // Recurring subscription flagged
+  push({date:cm+'-03', description:'Adobe Creative Cloud', merchant:'Adobe', amount:59.99, catId:e.id, category:'Entertainment', month:cm, type:'debit', flags:['recurring']});
+  db.transactions = tx;
+
+  // Build actuals from transactions (verified) per month
+  const actuals={};
+  months.forEach(ym=>{ actuals[ym]={}; });
+  tx.forEach(t=>{ if(!t.catId) return; if(!actuals[t.month]) actuals[t.month]={}; actuals[t.month][t.catId]=(actuals[t.month][t.catId]||0)+t.amount; });
+  // Force some deliberate variance signatures in current month
+  const cur=actuals[cm];
+  cur[catByName('Dining & takeout').id] = 372;     // over budget (red)
+  cur[catByName('Groceries').id] = 705;            // over (amber/red)
+  cur[catByName('Entertainment').id] = 168;        // slight over (green/amber edge)
+  cur[catByName('Transportation & fuel').id] = 196;// under (favorable)
+  db.actuals = actuals;
+}
+
+/* Synthetic pending document-review records (NOT auto-approved) */
+function seedDocuments(db){
+  const stamp=(o)=>Object.assign({created_at:nowISO(),updated_at:nowISO(),source:'synthetic-external-api',verification_status:'pending',user_id:USER_ID},o);
+  db.documents=[
+    stamp({id:uid('doc'), type:'Bank Statement', institution:'Northgate Bank (synthetic)', period_start:ymNow(-1)+'-01', period_end:ymNow(-1)+'-28',
+      accounts:[{mask:'****4821', type:'Checking', balance:4180.22}], processing_status:'pending_review', redaction_status:'redacted',
+      income_detected:6170, tx_count:34, validation_errors:[],
+      fields:[
+        {label:'Statement period', value:ymNow(-1)+' (full month)', confidence:0.99, verified:false},
+        {label:'Ending balance', value:'$4,180.22', confidence:0.97, verified:false},
+        {label:'Total deposits', value:'$6,170.00', confidence:0.93, verified:false},
+        {label:'Total withdrawals', value:'$5,932.10', confidence:0.9, verified:false}
+      ]}),
+    stamp({id:uid('doc'), type:'Pay Stub', institution:'Employer Payroll (synthetic)', period_start:ymNow(0)+'-01', period_end:ymNow(0)+'-15',
+      accounts:[{mask:'****4821', type:'Direct Deposit', balance:null}], processing_status:'pending_review', redaction_status:'redacted',
+      income_detected:2725, tx_count:0, validation_errors:['Net pay differs from prior period by >8%'],
+      fields:[
+        {label:'Gross pay', value:'$3,600.00', confidence:0.95, verified:false},
+        {label:'Net pay', value:'$2,725.00', confidence:0.88, verified:false},
+        {label:'Federal withholding', value:'$540.00', confidence:0.82, verified:false},
+        {label:'SSN', value:'***-**-1234', confidence:0.99, verified:false, masked:true}
+      ]}),
+    stamp({id:uid('doc'), type:'Brokerage Statement', institution:'Vista Investments (synthetic)', period_start:ymNow(-1)+'-01', period_end:ymNow(-1)+'-28',
+      accounts:[{mask:'****2277', type:'Brokerage', balance:23850.44}], processing_status:'pending_review', redaction_status:'redacted',
+      income_detected:0, tx_count:6, validation_errors:['Low OCR confidence on 2 line items'],
+      fields:[
+        {label:'Portfolio value', value:'$23,850.44', confidence:0.94, verified:false},
+        {label:'Dividends (period)', value:'$78.20', confidence:0.71, verified:false},
+        {label:'Contributions', value:'$500.00', confidence:0.86, verified:false}
+      ]})
+  ];
+  // Reconciliation queue derived from unverified extractions + uncategorized tx
+  db.reconcile=[
+    stamp({id:uid('rec'), transaction:'SQ *UNKNOWN VENDOR', source:'Bank Statement (synthetic)', extracted_value:64.50, confidence:0.62, proposed_category:'Shopping & personal', duplicate:false, decision:'pending'}),
+    stamp({id:uid('rec'), transaction:'Costco (possible dup)', source:'Bank Statement (synthetic)', extracted_value:142.88, confidence:0.9, proposed_category:'Groceries', duplicate:true, decision:'pending'}),
+    stamp({id:uid('rec'), transaction:'Dividend credit', source:'Brokerage Statement (synthetic)', extracted_value:78.20, confidence:0.71, proposed_category:'Investment income', duplicate:false, decision:'pending'}),
+    stamp({id:uid('rec'), transaction:'ATM withdrawal', source:'Bank Statement (synthetic)', extracted_value:200.00, confidence:0.83, proposed_category:'Uncategorized', duplicate:false, decision:'pending'})
+  ];
+}
+
+/* ---------- Store ---------- */
+const Store = {
+  db:null,
+  load(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(raw){ this.db = JSON.parse(raw); return; }
+    }catch(e){ console.warn('load failed',e); }
+    this.reset(false);
+  },
+  save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(this.db)); }catch(e){ console.warn('save failed',e); } },
+  reset(save=true){
+    const db = seedData();
+    seedTransactions(db);
+    seedDocuments(db);
+    db.audit=[];
+    this.db=db;
+    this.log('system','Initialized synthetic demonstration dataset');
+    if(save) this.save();
+  },
+  log(kind, detail, extra){
+    this.db.audit.unshift({id:uid('aud'), at:nowISO(), kind, detail, extra:extra||null, user_id:USER_ID});
+    if(this.db.audit.length>500) this.db.audit.length=500;
+  }
+};
+
+/* ============================================================
+   CALCULATION ENGINE  (pure functions; the single source of truth)
+   ============================================================ */
+const Calc = {
+  netIncome(db){ return db.income.reduce((s,i)=>s+(+i.amount||0),0); },      // NEVER counts available credit
+  grossIncome(db){ return db.income.reduce((s,i)=>s+(+i.gross||i.amount||0),0); },
+  byType(db,t){ return db.budget.filter(c=>c.type===t); },
+  sumType(db,t){ return this.byType(db,t).reduce((s,c)=>s+(+c.budgeted||0),0); },
+  totalExpenses(db){ return this.sumType(db,'fixed')+this.sumType(db,'variable'); },   // living expenses
+  debtPayments(db){ return this.sumType(db,'debt'); },
+  plannedSavings(db){ return this.sumType(db,'savings')+this.sumType(db,'sinking'); },
+  monthlySurplus(db){
+    return this.netIncome(db) - this.totalExpenses(db) - this.debtPayments(db) - this.plannedSavings(db);
+  },
+  totalBudgetedOutflow(db){ return this.totalExpenses(db)+this.debtPayments(db)+this.plannedSavings(db); },
+  freeCashFlow(db){ return this.monthlySurplus(db); },
+  savingsRate(db){ const ni=this.netIncome(db); return ni?((this.plannedSavings(db))/ni*100):0; },
+  totalDebt(db){ return this.byType(db,'debt').reduce((s,c)=>s+(+c.balance||0),0); },
+  dti(db){ const ni=this.netIncome(db); return ni?(this.debtPayments(db)/ni*100):0; },
+  emergencyMonths(db){
+    const ef = db.accounts.filter(a=>/emergency|savings/i.test(a.name)||a.type==='savings').reduce((s,a)=>s+(+a.balance||0),0);
+    const need = this.totalExpenses(db)+this.debtPayments(db);
+    return need? ef/need : 0;
+  },
+  netWorth(db){
+    const assets = db.accounts.reduce((s,a)=>s+(+a.balance||0),0);
+    return assets - this.totalDebt(db);
+  },
+  actualsForMonth(db,ym){ return db.actuals[ym]||{}; },
+  budgetUtilization(db,ym){
+    const a=this.actualsForMonth(db,ym); const spentCats=this.byType(db,'fixed').concat(this.byType(db,'variable'));
+    const bud=spentCats.reduce((s,c)=>s+(+c.budgeted||0),0);
+    const act=spentCats.reduce((s,c)=>s+(+a[c.id]||0),0);
+    return bud? act/bud*100 : 0;
+  },
+  variance(cat, actual){
+    const b=+cat.budgeted||0; const va=actual-b; const vp = b? (va/b*100):0;
+    return {budgeted:b, actual, variance_amount:va, variance_percentage:vp};
+  },
+  varianceStatus(db, cat, actual, projectedCashFlow){
+    const {variance_percentage} = this.variance(cat, actual);
+    const th=db.settings.thresholds;
+    // Unfavorable = spending over budget for expense/debt; under target for savings is unfavorable too
+    const isSpend = (cat.type==='fixed'||cat.type==='variable'||cat.type==='debt');
+    let unfav; // signed unfavorable %
+    if(isSpend) unfav = variance_percentage;          // positive = over spend = bad
+    else unfav = -variance_percentage;                // savings: under target = positive unfav
+    if(projectedCashFlow!==undefined && projectedCashFlow<0) return 'critical';
+    if(unfav<=th.green) return 'green';
+    if(unfav<=th.amber) return 'amber';
+    return 'red';
+  },
+  varianceRows(db,ym){
+    const a=this.actualsForMonth(db,ym);
+    return db.budget.filter(c=>c.type!=='savings'||true).map(c=>{
+      const act = +a[c.id]||0;
+      const v=this.variance(c,act);
+      const status=this.varianceStatus(db,c,act);
+      return Object.assign({cat:c, category:c.name, type:c.type}, v, {status});
+    });
+  },
+  topUnfavorable(db,ym,n=3){
+    return this.varianceRows(db,ym)
+      .filter(r=>(r.type==='fixed'||r.type==='variable'||r.type==='debt') && r.variance_amount>0)
+      .sort((x,y)=>y.variance_amount-x.variance_amount).slice(0,n);
+  },
+
+  /* Goals */
+  monthsBetween(fromISO,toISO){
+    const a=new Date(fromISO||nowISO()), b=new Date(toISO);
+    return Math.max(1, (b.getFullYear()-a.getFullYear())*12 + (b.getMonth()-a.getMonth()));
+  },
+  goalCompute(db, g){
+    const months=this.monthsBetween(nowISO(), g.target_date);
+    const r=(+g.exp_return||0)/12;
+    // expected growth on current balance over the horizon (simple compounding of current only)
+    const fvCurrent = r? (+g.current)*Math.pow(1+r,months) : (+g.current);
+    const expected_growth = fvCurrent - (+g.current);
+    const remaining = Math.max(0, (+g.target) - (+g.current) - expected_growth);
+    const required_monthly = remaining / months;
+    const weekly = required_monthly*12/52;
+    // current contribution: infer from a savings/sinking budget line matching by name, else 0
+    const match = db.budget.find(c=>(c.type==='savings'||c.type==='sinking') && namesMatch(c.name,g.name));
+    const current_contribution = match? (+match.budgeted||0) : 0;
+    const gap = required_monthly - current_contribution;
+    // projected completion at current contribution
+    let proj=null;
+    if(current_contribution>0){
+      const need=(+g.target)-(+g.current);
+      const m=Math.ceil(need/ (current_contribution + (r? (+g.current)*r : 0)));
+      const dt=new Date(); dt.setMonth(dt.getMonth()+Math.max(1,m)); proj=dt.toISOString();
+    }
+    const progress = Math.min(100, (+g.current)/(+g.target)*100);
+    return {months, required_monthly, weekly, current_contribution, gap, projected:proj, progress, expected_growth};
+  },
+
+  /* Mortgage */
+  pmt(principal, annualRate, years){
+    const r=annualRate/12, n=years*12;
+    if(r===0) return principal/n;
+    return principal * r / (1-Math.pow(1+r,-n));
+  },
+  mortgage(db, override){
+    const m=Object.assign({}, db.mortgage, override||{});
+    const price=+m.home_price, dp=+m.down_payment;
+    const loan=Math.max(0, price-dp);
+    const pi=this.pmt(loan, +m.rate, +m.term_years);
+    const tax=(+m.property_tax_annual)/12;
+    const ins=(+m.insurance_annual)/12;
+    const hoa=(+m.hoa_monthly)||0;
+    const ltv = price? loan/price : 0;
+    const pmi = (ltv>0.8) ? (loan*(+m.pmi_annual_pct))/12 : 0;
+    const maint = (price*(+m.maintenance_pct))/12;
+    const housing_payment = pi+tax+ins+hoa+pmi;         // PITI+HOA+PMI (lender housing ratio)
+    const full_ownership = pi+tax+ins+hoa+pmi+maint;    // + maintenance reserve
+    const gross=+m.gross_monthly;
+    const front = gross? housing_payment/gross*100 : 0;
+    const back = gross? (housing_payment + (+m.existing_debt))/gross*100 : 0;
+    const closing = price*(+m.closing_pct);
+    const cash_needed = dp + closing;
+    const reserves_after = (db.accounts.reduce((s,a)=>s+(+a.balance||0),0)) - cash_needed;
+    return {loan,pi,tax,ins,hoa,pmi,maint,housing_payment,full_ownership,front,back,closing,cash_needed,reserves_after,ltv,price,dp,
+            emergency_required:+m.emergency_required, gross, existing_debt:+m.existing_debt, rate:+m.rate, term:+m.term_years};
+  },
+  // affordable home price for a target back-end DTI
+  affordableForDTI(db, targetBackPct){
+    const m=db.mortgage; const gross=+m.gross_monthly;
+    const maxHousing = gross*targetBackPct - (+m.existing_debt);
+    if(maxHousing<=0) return {price:0,housing:0};
+    // solve iteratively for price where housing_payment == maxHousing
+    let lo=0, hi=2000000;
+    for(let i=0;i<60;i++){
+      const mid=(lo+hi)/2;
+      const r=this.mortgage(db,{home_price:mid});
+      if(r.housing_payment>maxHousing) hi=mid; else lo=mid;
+    }
+    const price=(lo+hi)/2; const r=this.mortgage(db,{home_price:price});
+    return {price, housing:r.housing_payment, dti:targetBackPct*100};
+  },
+  rateSensitivity(db){
+    const rates=[-0.01,-0.005,0,0.005,0.01,0.02];
+    return rates.map(dr=>{ const r=this.mortgage(db,{rate:(+db.mortgage.rate)+dr}); return {rate:(+db.mortgage.rate)+dr, pi:r.pi, housing:r.housing_payment, back:r.back}; });
+  },
+
+  /* Scenario baseline snapshot */
+  baseline(db){
+    const ym=ymNow(0);
+    const mtg=this.mortgage(db);
+    return {
+      label:'Baseline (immutable)',
+      net_income:this.netIncome(db), expenses:this.totalExpenses(db), debt:this.debtPayments(db),
+      savings:this.plannedSavings(db), surplus:this.monthlySurplus(db),
+      dti:this.dti(db), emergency_months:this.emergencyMonths(db),
+      housing:mtg.housing_payment, back_end:mtg.back, front_end:mtg.front,
+      home_price:mtg.price, net_worth:this.netWorth(db)
+    };
+  }
+};
+function namesMatch(a,b){ a=a.toLowerCase(); b=b.toLowerCase();
+  const key=(s)=>s.replace(/[^a-z]/g,''); const A=key(a),B=key(b);
+  if(A.includes('emergency')&&B.includes('emergency'))return true;
+  if(A.includes('down')&&B.includes('down'))return true;
+  if((A.includes('car')||A.includes('auto'))&&(B.includes('car')||B.includes('vehicle')))return true;
+  if(A.includes('vacation')&&B.includes('vacation'))return true;
+  return false;
+}
+
+/* boot store immediately */
+Store.load();
+
+</script>
+<script>
+/* ===== ui.js (inlined) ===== */
+/* ============================================================
+   UI LAYER  — router, views, assistant
+   Appended after app.js (shares globals: Store, Calc, helpers)
+   ============================================================ */
+
+const NAV = [
+  {id:'overview', label:'Overview', sub:'Your financial position at a glance', ico:'M3 12h4l3-9 4 18 3-9h4'},
+  {id:'budget', label:'Budget', sub:'Income and category planning', ico:'M4 5h16M4 12h16M4 19h10'},
+  {id:'transactions', label:'Transactions', sub:'Actual spending and anomaly flags', ico:'M4 6h16v12H4z M4 10h16'},
+  {id:'reconciliation', label:'Reconciliation', sub:'Review queue for extracted records', ico:'M9 11l3 3 8-8 M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9'},
+  {id:'goals', label:'Goals', sub:'Targets and required contributions', ico:'M12 2v20 M2 12h20'},
+  {id:'mortgage', label:'Mortgage Readiness', sub:'Affordability planning estimates', ico:'M3 11l9-8 9 8 M5 10v10h14V10'},
+  {id:'scenario', label:'Scenario Lab', sub:'Compare futures against baseline', ico:'M4 17l6-6 4 4 6-8'},
+  {id:'recommendations', label:'Recommendation Center', sub:'Prioritized quantitative action plan', ico:'M9 11l3 3 8-8 M4 12a8 8 0 108-8'},
+  {id:'documents', label:'Document Review', sub:'External extraction results', ico:'M6 2h9l5 5v15H6z M14 2v6h6'},
+  {id:'settings', label:'Settings & Assumptions', sub:'Thresholds and planning inputs', ico:'M12 15a3 3 0 100-6 3 3 0 000 6z M19 12a7 7 0 00-.1-1l2-1.5-2-3.5-2.3 1a7 7 0 00-1.7-1L14 2h-4l-.9 2.9a7 7 0 00-1.7 1l-2.3-1-2 3.5L3 11a7 7 0 000 2l-2 1.5 2 3.5 2.3-1a7 7 0 001.7 1L10 22h4l.9-2.9a7 7 0 001.7-1l2.3 1 2-3.5-2-1.5a7 7 0 00.1-1z'}
+];
+
+const App = {
+  cur:'overview',
+  budgetPeriod:'monthly',
+  varMonth:ymNow(0),
+  scenario:null,
+  init(){
+    document.getElementById('userLabel').textContent = Store.db.settings.display_name;
+    const nav=document.getElementById('nav');
+    nav.innerHTML=NAV.map(n=>`<button data-v="${n.id}" onclick="App.go('${n.id}')">
+      <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${n.ico}"/></svg>
+      <span>${n.label}</span></button>`).join('');
+    this.go('overview');
+    Assistant.init();
+  },
+  go(id){
+    this.cur=id;
+    const n=NAV.find(x=>x.id===id);
+    document.getElementById('viewTitle').textContent=n.label;
+    document.getElementById('viewSub').textContent=n.sub;
+    document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===id));
+    document.getElementById('sidebar').classList.remove('open');
+    this.render();
+    window.scrollTo(0,0);
+  },
+  render(){
+    const c=document.getElementById('content');
+    c.innerHTML = Views[this.cur] ? Views[this.cur]() : '<div class="empty">Not found</div>';
+    if(Views['_after_'+this.cur]) Views['_after_'+this.cur]();
+  }
+};
+
+/* ---------- shared render helpers ---------- */
+const typeLabel={fixed:'Fixed',variable:'Variable',debt:'Debt',savings:'Savings',sinking:'Sinking fund'};
+const badge=(status,text)=>`<span class="badge ${status}">${text||status}</span>`;
+const syntheticNote='<div class="banner"><span class="b-badge">Synthetic</span> All records are synthetic demonstration data generated locally. No real financial data is present.</div>';
+
+/* ============================================================
+   VIEWS
+   ============================================================ */
+const Views={};
+
+/* ---------- OVERVIEW ---------- */
+Views.overview=function(){
+  const db=Store.db, ym=App.varMonth;
+  const ni=Calc.netIncome(db), exp=Calc.totalExpenses(db), debt=Calc.debtPayments(db);
+  const fcf=Calc.freeCashFlow(db), sr=Calc.savingsRate(db), em=Calc.emergencyMonths(db);
+  const td=Calc.totalDebt(db), dti=Calc.dti(db), nw=Calc.netWorth(db);
+  const util=Calc.budgetUtilization(db,ym);
+  const top=Calc.topUnfavorable(db,ym,3);
+  const mtg=Calc.mortgage(db);
+  const mReady = mtg.back<=db.settings.assumptions.back_end_max*100 && mtg.front<=db.settings.assumptions.front_end_max*100 && mtg.reserves_after>=mtg.emergency_required;
+  const mStatus = mReady?'green':(mtg.back<=40?'amber':'red');
+  const card=(lbl,val,cls,meta)=>`<div class="card"><div class="lbl">${lbl}</div><div class="val ${cls||''}">${val}</div>${meta?`<div class="meta">${meta}</div>`:''}</div>`;
+  const goalsHtml = db.goals.map(g=>{const gc=Calc.goalCompute(db,g);const st=gc.progress>=75?'green':gc.progress>=40?'amber':'red';
+    return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span>${g.name}</span><span class="mono">${fmtMoney(g.current)} / ${fmtMoney(g.target)}</span></div><div class="bar-track"><div class="bar-fill ${st}" style="width:${gc.progress}%"></div></div></div>`;}).join('');
+  return `
+  ${syntheticNote}
+  <div class="grid cards" style="margin-bottom:18px">
+    ${card('Net monthly income',fmtMoney(ni),'','Credit lines never counted')}
+    ${card('Total monthly expenses',fmtMoney(exp),'','Fixed + variable')}
+    ${card('Free cash flow',fmtMoney(fcf),fcf>=0?'pos':'neg','After expenses, debt &amp; savings')}
+    ${card('Savings rate',fmtPct(sr),sr>=15?'pos':'', 'Of net income')}
+    ${card('Emergency-fund months',em.toFixed(1),em>=6?'pos':em>=3?'':'neg','Target '+db.settings.assumptions.emergency_fund_target_months+' months')}
+    ${card('Total debt',fmtMoney(td),'','Across '+Calc.byType(db,'debt').length+' accounts')}
+    ${card('Debt-to-income',fmtPct(dti),dti<=15?'pos':dti<=25?'':'neg','Payments / net income')}
+    ${card('Net worth',fmtMoney(nw),nw>=0?'pos':'neg','Assets - debt')}
+    ${card('Budget utilization',fmtPct(util),util<=100?'':'neg',fmtDate(ym+'-01').replace(/,.*/,''))}
+  </div>
+  <div class="two-col">
+    <div class="section">
+      <h3>Top three unfavorable variances</h3>
+      <div class="desc">Largest overspend against budget this month</div>
+      ${top.length? top.map(r=>`<div class="kv"><span class="k">${r.category} ${badge(r.status)}</span><span class="v">+${fmtMoney(r.variance_amount)} (${fmtPct(r.variance_percentage)})</span></div>`).join('') : '<div class="empty">No unfavorable variances</div>'}
+    </div>
+    <div class="section">
+      <h3>Goal progress</h3>
+      <div class="desc">${db.goals.length} active goals</div>
+      ${goalsHtml}
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-head"><div><h3>Mortgage-readiness status ${badge(mStatus, mReady?'On track':'Needs work')}</h3>
+    <div class="desc">Planning estimate only \u2014 not a lender approval</div></div></div>
+    <div class="stat-inline">
+      <div class="si"><div class="n">${fmtPct(mtg.front)}</div><div class="l">Front-end DTI (max ${(db.settings.assumptions.front_end_max*100)}%)</div></div>
+      <div class="si"><div class="n">${fmtPct(mtg.back)}</div><div class="l">Back-end DTI (max ${(db.settings.assumptions.back_end_max*100)}%)</div></div>
+      <div class="si"><div class="n">${fmtMoney(mtg.housing_payment)}</div><div class="l">Est. housing payment</div></div>
+      <div class="si"><div class="n">${fmtMoney(mtg.reserves_after)}</div><div class="l">Reserves after closing</div></div>
+    </div>
+  </div>`;
+};
+
+/* ---------- BUDGET ---------- */
+Views.budget=function(){
+  const db=Store.db, p=App.budgetPeriod, f=(n)=>p==='weekly'? n*12/52 : n;
+  const ni=Calc.netIncome(db), exp=Calc.totalExpenses(db), debt=Calc.debtPayments(db), sav=Calc.plannedSavings(db);
+  const surplus=Calc.monthlySurplus(db);
+  const grp=(t)=>Calc.byType(db,t).map(c=>`<tr>
+      <td>${c.name}</td><td>${badge('gray',typeLabel[c.type])}</td>
+      <td class="num">${fmtMoney(f(c.budgeted))}</td>
+      ${c.type==='debt'?`<td class="num">${fmtMoney(c.balance||0)}</td><td class="num">${(c.apr||0)}%</td>`:'<td></td><td></td>'}
+      <td><button class="btn ghost sm" onclick="Actions.editCat('${c.id}')">Edit</button></td></tr>`).join('');
+  return `
+  ${syntheticNote}
+  <div class="section">
+    <div class="section-head">
+      <div><h3>Monthly income</h3><div class="desc">Available credit is never counted as income</div></div>
+      <button class="btn sm" onclick="Actions.editIncome()">Edit income</button>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>Source</th><th class="num">Gross</th><th class="num">Net</th><th>Cadence</th></tr></thead><tbody>
+      ${db.income.map(i=>`<tr><td>${i.name}</td><td class="num">${fmtMoney(i.gross||0)}</td><td class="num">${fmtMoney(i.amount)}</td><td>${i.cadence}</td></tr>`).join('')}
+      <tr style="font-weight:600"><td>Total net income</td><td class="num"></td><td class="num">${fmtMoney(ni)}</td><td></td></tr>
+    </tbody></table></div>
+  </div>
+  <div class="section">
+    <div class="section-head">
+      <div><h3>Budget categories</h3><div class="desc">Fixed, variable, debt, savings and sinking-fund lines</div></div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="pill-tabs"><button class="${p==='monthly'?'active':''}" onclick="App.budgetPeriod='monthly';App.render()">Monthly</button><button class="${p==='weekly'?'active':''}" onclick="App.budgetPeriod='weekly';App.render()">Weekly</button></div>
+        <button class="btn sm" onclick="Actions.addCat()">Add category</button>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>Category</th><th>Type</th><th class="num">${p==='weekly'?'Weekly':'Monthly'} budget</th><th class="num">Balance</th><th class="num">APR</th><th></th></tr></thead>
+    <tbody>${grp('fixed')}${grp('variable')}${grp('debt')}${grp('savings')}${grp('sinking')}</tbody></table></div>
+  </div>
+  <div class="section">
+    <h3>Monthly surplus</h3>
+    <div class="desc">net_income &minus; total_expenses &minus; debt_payments &minus; planned_savings</div>
+    <div class="tbl-wrap"><table><tbody>
+      <tr><td>Net income</td><td class="num">${fmtMoney(f(ni))}</td></tr>
+      <tr><td>Total expenses (fixed + variable)</td><td class="num">&minus;${fmtMoney(f(exp))}</td></tr>
+      <tr><td>Debt payments</td><td class="num">&minus;${fmtMoney(f(debt))}</td></tr>
+      <tr><td>Planned savings + sinking</td><td class="num">&minus;${fmtMoney(f(sav))}</td></tr>
+      <tr style="font-weight:600"><td>${p==='weekly'?'Weekly':'Monthly'} surplus</td><td class="num" style="color:${surplus>=0?'var(--green)':'var(--red)'}">${fmtMoney(f(surplus))}</td></tr>
+    </tbody></table></div>
+  </div>`;
+};
+
+/* ---------- TRANSACTIONS / VARIANCE ---------- */
+Views.transactions=function(){
+  const db=Store.db, ym=App.varMonth;
+  const months=Object.keys(db.actuals).sort();
+  const rows=Calc.varianceRows(db,ym).filter(r=>r.type!=='sinking');
+  const flagged=db.transactions.filter(t=>t.month===ym && t.flags && t.flags.length);
+  const flagColor={duplicate:'red',missing:'amber',unusual:'amber',recurring:'blue',uncategorized:'gray'};
+  return `
+  ${syntheticNote}
+  <div class="section">
+    <div class="section-head">
+      <div><h3>Budget vs actual by category</h3><div class="desc">variance_amount = actual &minus; budgeted &nbsp;&middot;&nbsp; variance_% = variance / budgeted &times; 100</div></div>
+      <select style="width:auto" onchange="App.varMonth=this.value;App.render()">${months.map(m=>`<option ${m===ym?'selected':''} value="${m}">${m}</option>`).join('')}</select>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>Category</th><th>Type</th><th class="num">Budgeted</th><th class="num">Actual</th><th class="num">Variance</th><th class="num">Variance %</th><th>Status</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td>${r.category}</td><td>${badge('gray',typeLabel[r.type])}</td>
+      <td class="num">${fmtMoney(r.budgeted)}</td><td class="num">${fmtMoney(r.actual)}</td>
+      <td class="num" style="color:${r.variance_amount>0?'var(--red)':'var(--green)'}">${r.variance_amount>0?'+':''}${fmtMoney(r.variance_amount)}</td>
+      <td class="num">${fmtPct(r.variance_percentage)}</td><td>${badge(r.status)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="mini" style="margin-top:10px">Thresholds: green within ${db.settings.thresholds.green}% &middot; amber ${db.settings.thresholds.green}\u2013${db.settings.thresholds.amber}% unfavorable &middot; red over ${db.settings.thresholds.amber}% &middot; critical if projected cash flow below zero</div>
+  </div>
+  <div class="section">
+    <h3>Flagged transactions</h3>
+    <div class="desc">Duplicate, missing, unusual, recurring and uncategorized items for ${ym}</div>
+    ${flagged.length? `<div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Flags</th></tr></thead>
+    <tbody>${flagged.map(t=>`<tr><td>${t.date}</td><td>${t.description}</td><td>${t.category||'\u2014'}</td><td class="num">${fmtMoney2(t.amount)}</td><td>${t.flags.map(f=>badge(flagColor[f]||'gray',f)).join(' ')}</td></tr>`).join('')}</tbody></table></div>`
+    : '<div class="empty">No flagged transactions this month</div>'}
+    <div class="mini" style="margin-top:10px">A "missing" flag would surface when a recurring category has no matching transaction in the period.</div>
+  </div>`;
+};
+
+/* ---------- RECONCILIATION ---------- */
+Views.reconciliation=function(){
+  const db=Store.db;
+  const q=db.reconcile;
+  const decisionBadge=(d)=>({pending:'gray',approved:'green',rejected:'red',corrected:'amber'}[d]||'gray');
+  return `
+  ${syntheticNote}
+  <div class="banner info"><span class="b-badge" style="background:#0d2440;color:var(--accent);border-color:var(--accent2)">Verify</span>
+   Extracted (OCR) records are not made official until you approve them. Nothing here has modified your verified budget.</div>
+  <div class="section">
+    <div class="section-head"><div><h3>Review queue</h3><div class="desc">${q.filter(r=>r.decision==='pending').length} pending of ${q.length}</div></div></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Transaction</th><th>Source</th><th class="num">Extracted</th><th class="num">Confidence</th><th>Proposed category</th><th>Duplicate</th><th>Decision</th><th></th></tr></thead>
+    <tbody>${q.map(r=>`<tr>
+      <td>${r.transaction}</td><td>${r.source}</td>
+      <td class="num">${fmtMoney2(r.extracted_value)}</td>
+      <td class="num">${badge(r.confidence>=0.85?'green':r.confidence>=0.7?'amber':'red',(r.confidence*100).toFixed(0)+'%')}</td>
+      <td>${r.proposed_category}</td>
+      <td>${r.duplicate?badge('red','Duplicate'):badge('gray','No')}</td>
+      <td>${badge(decisionBadge(r.decision),r.decision)}</td>
+      <td><div class="btnrow">
+        <button class="btn sm" ${r.decision==='approved'?'disabled':''} onclick="Actions.reconcile('${r.id}','approved')">Approve</button>
+        <button class="btn sec sm" onclick="Actions.reconcileCorrect('${r.id}')">Correct</button>
+        <button class="btn danger sm" ${r.decision==='rejected'?'disabled':''} onclick="Actions.reconcile('${r.id}','rejected')">Reject</button>
+      </div></td></tr>`).join('')}</tbody></table></div>
+  </div>`;
+};
+
+/* ---------- GOALS ---------- */
+Views.goals=function(){
+  const db=Store.db;
+  return `
+  ${syntheticNote}
+  <div class="section">
+    <div class="section-head"><div><h3>Financial goals</h3><div class="desc">required_monthly = (target &minus; current &minus; expected_growth) / months_remaining</div></div>
+    <button class="btn sm" onclick="Actions.addGoal()">Add goal</button></div>
+  </div>
+  ${db.goals.map(g=>{const gc=Calc.goalCompute(db,g);const st=gc.progress>=75?'green':gc.progress>=40?'amber':'red';
+    const incomeEffect=gc.gap>0?gc.gap:0;
+    return `<div class="section">
+      <div class="section-head">
+        <div><h3>${g.name} ${badge(g.priority==='High'?'red':g.priority==='Medium'?'amber':'gray',g.priority)}</h3>
+        <div class="desc">Target ${fmtMoney(g.target)} by ${fmtDate(g.target_date)} &middot; expected return ${(g.exp_return*100).toFixed(1)}%</div></div>
+        <button class="btn ghost sm" onclick="Actions.editGoal('${g.id}')">Edit</button>
+      </div>
+      <div class="bar-track" style="margin-bottom:14px"><div class="bar-fill ${st}" style="width:${gc.progress}%"></div></div>
+      <div class="three-col">
+        <div><div class="kv"><span class="k">Required monthly</span><span class="v">${fmtMoney2(gc.required_monthly)}</span></div>
+          <div class="kv"><span class="k">Weekly equivalent</span><span class="v">${fmtMoney2(gc.weekly)}</span></div>
+          <div class="kv"><span class="k">Current contribution</span><span class="v">${fmtMoney2(gc.current_contribution)}</span></div></div>
+        <div><div class="kv"><span class="k">Contribution gap</span><span class="v" style="color:${gc.gap>0?'var(--red)':'var(--green)'}">${fmtMoney2(gc.gap)}</span></div>
+          <div class="kv"><span class="k">Projected completion</span><span class="v">${gc.projected?fmtDate(gc.projected):'\u2014'}</span></div>
+          <div class="kv"><span class="k">Expected growth</span><span class="v">${fmtMoney2(gc.expected_growth)}</span></div></div>
+        <div><div class="mini" style="margin-bottom:6px">What-if levers</div>
+          <div class="kv"><span class="k">+ $250 income &rarr; contribution</span><span class="v">${fmtMoney2(Math.max(0,gc.required_monthly-250))}/mo need</span></div>
+          <div class="kv"><span class="k">Cut $150 expenses</span><span class="v">closes ${Math.min(100,(150/(gc.gap||1)*100)).toFixed(0)}% of gap</span></div>
+          <div class="kv"><span class="k">Extend deadline +6 mo</span><span class="v">${fmtMoney2((g.target-g.current-gc.expected_growth)/(gc.months+6))}/mo</span></div></div>
+      </div>
+    </div>`;}).join('')}`;
+};
+
+/* ---------- MORTGAGE ---------- */
+Views.mortgage=function(){
+  const db=Store.db, m=Calc.mortgage(db);
+  const cons=Calc.affordableForDTI(db, db.settings.assumptions.conservative_back_end);
+  const bal=Calc.affordableForDTI(db, db.settings.assumptions.balanced_back_end);
+  const max=Calc.affordableForDTI(db, db.settings.assumptions.back_end_max);
+  const sens=Calc.rateSensitivity(db);
+  const kv=(k,v,c)=>`<div class="kv"><span class="k">${k}</span><span class="v" ${c?`style="color:${c}"`:''}>${v}</span></div>`;
+  return `
+  ${syntheticNote}
+  <div class="banner"><span class="b-badge">Estimate</span> All mortgage figures are planning estimates, not a lender pre-approval or credit decision.</div>
+  <div class="section-head" style="margin-bottom:14px">
+    <div></div><button class="btn sm" onclick="Actions.editMortgage()">Edit inputs</button>
+  </div>
+  <div class="two-col">
+    <div class="section"><h3>Full ownership cost (monthly)</h3>
+      ${kv('Principal &amp; interest',fmtMoney(m.pi))}
+      ${kv('Property taxes',fmtMoney(m.tax))}
+      ${kv('Homeowners insurance',fmtMoney(m.ins))}
+      ${kv('HOA',fmtMoney(m.hoa))}
+      ${kv('Mortgage insurance (PMI)',fmtMoney(m.pmi))}
+      ${kv('Maintenance reserve',fmtMoney(m.maint))}
+      ${kv('Total full ownership cost',fmtMoney(m.full_ownership),'var(--accent)')}
+      <hr class="sep">
+      ${kv('Lender housing payment (PITI+HOA+PMI)',fmtMoney(m.housing_payment))}
+    </div>
+    <div class="section"><h3>Debt-to-income</h3>
+      ${kv('Front-end DTI',fmtPct(m.front), m.front<=28?'var(--green)':m.front<=32?'var(--amber)':'var(--red)')}
+      <div class="mini">housing_payment / gross_monthly_income</div>
+      ${kv('Back-end DTI',fmtPct(m.back), m.back<=36?'var(--green)':m.back<=43?'var(--amber)':'var(--red)')}
+      <div class="mini">(housing_payment + existing_debt) / gross_monthly_income</div>
+      <hr class="sep">
+      ${kv('Cash needed at closing',fmtMoney(m.cash_needed))}
+      <div class="mini">down payment ${fmtMoney(m.dp)} + closing ${fmtMoney(m.closing)}</div>
+      ${kv('Reserves remaining after closing',fmtMoney(m.reserves_after), m.reserves_after>=m.emergency_required?'var(--green)':'var(--red)')}
+      <div class="mini">emergency-fund requirement: ${fmtMoney(m.emergency_required)}</div>
+    </div>
+  </div>
+  <div class="section"><h3>Affordability tiers</h3>
+    <div class="desc">Based on target back-end DTI ratios. Estimates only.</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Tier</th><th class="num">Target back-end DTI</th><th class="num">Affordable home price</th><th class="num">Est. housing payment</th></tr></thead>
+    <tbody>
+      <tr><td>Conservative ${badge('green')}</td><td class="num">${(db.settings.assumptions.conservative_back_end*100)}%</td><td class="num">${fmtMoney(cons.price)}</td><td class="num">${fmtMoney(cons.housing)}</td></tr>
+      <tr><td>Balanced ${badge('amber')}</td><td class="num">${(db.settings.assumptions.balanced_back_end*100)}%</td><td class="num">${fmtMoney(bal.price)}</td><td class="num">${fmtMoney(bal.housing)}</td></tr>
+      <tr><td>Est. maximum lender qualification ${badge('red')}</td><td class="num">${(db.settings.assumptions.back_end_max*100)}%</td><td class="num">${fmtMoney(max.price)}</td><td class="num">${fmtMoney(max.housing)}</td></tr>
+    </tbody></table></div>
+  </div>
+  <div class="two-col">
+    <div class="section"><h3>Payment sensitivity by rate</h3><div id="rateChart" class="chart-box"></div></div>
+    <div class="section"><h3>Affordability improvement opportunities</h3>
+      <div class="kv"><span class="k">Reach 20% down (avoid PMI)</span><span class="v">saves ${fmtMoney(m.pmi)}/mo</span></div>
+      <div class="kv"><span class="k">Reduce existing debt by $300/mo</span><span class="v">back-end &rarr; ${fmtPct(((m.housing_payment+Math.max(0,m.existing_debt-300))/m.gross*100))}</span></div>
+      <div class="kv"><span class="k">Rate 0.5% lower</span><span class="v">P&amp;I &rarr; ${fmtMoney(Calc.mortgage(db,{rate:m.rate-0.005}).pi)}</span></div>
+      <div class="kv"><span class="k">Increase gross income $500/mo</span><span class="v">back-end &rarr; ${fmtPct(((m.housing_payment+m.existing_debt)/(m.gross+500)*100))}</span></div>
+    </div>
+  </div>`;
+};
+Views._after_mortgage=function(){
+  const db=Store.db, sens=Calc.rateSensitivity(db);
+  const g=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  if(!window.Highcharts) return;
+  Highcharts.chart('rateChart',{
+    chart:{type:'column',backgroundColor:'transparent',style:{fontFamily:'var(--sans)'}},
+    title:{text:null}, credits:{enabled:false},
+    xAxis:{categories:sens.map(s=>(s.rate*100).toFixed(2)+'%'),labels:{style:{color:'#adbac7'}},lineColor:'#30363d'},
+    yAxis:{title:{text:'Monthly P&I ($)',style:{color:'#768390'}},labels:{style:{color:'#adbac7'}},gridLineColor:'#21262d'},
+    legend:{enabled:false},
+    tooltip:{backgroundColor:'#161b22',borderColor:'#30363d',style:{color:'#e6edf3'},valuePrefix:'$'},
+    series:[{name:'P&I',data:sens.map(s=>Math.round(s.pi)),color:'#2f81f7'}]
+  });
+};
+
+/* ---------- SCENARIO LAB ---------- */
+Views.scenario=function(){
+  const db=Store.db, base=Calc.baseline(db);
+  if(!App.scenario) App.scenario={income_delta:0,expense_delta:0,debt_delta:0,home_price:db.mortgage.home_price,rate:db.mortgage.rate,down_payment:db.mortgage.down_payment,target_delta:0,savings_delta:0,inflation:db.settings.assumptions.inflation,onetime:0};
+  const s=App.scenario;
+  // compute scenario
+  const ni=base.net_income+ +s.income_delta;
+  const exp=base.expenses+ +s.expense_delta;
+  const debt=base.debt+ +s.debt_delta;
+  const sav=base.savings+ +s.savings_delta;
+  const surplus=ni-exp-debt-sav - (+s.onetime)/12;
+  const mtg=Calc.mortgage(db,{home_price:+s.home_price,rate:+s.rate,down_payment:+s.down_payment});
+  const em=(db.accounts.reduce((a,x)=>a+(+x.balance||0),0) - (+s.onetime))/((exp+debt)||1);
+  const dti=ni?debt/ni*100:0;
+  const row=(lbl,b,v,fmt,better)=>{const d=v-b;const good=better==='up'?d>=0:d<=0;
+    return `<tr><td>${lbl}</td><td class="num">${fmt(b)}</td><td class="num">${fmt(v)}</td><td class="num" style="color:${d===0?'var(--muted)':good?'var(--green)':'var(--red)'}">${d>0?'+':''}${fmt(d)}</td></tr>`;};
+  const sl=(lbl,key,min,max,step,val,fmt)=>`<div class="field"><label class="fld">${lbl}: <span style="color:var(--text)">${fmt(val)}</span></label><input type="range" min="${min}" max="${max}" step="${step}" value="${val}" oninput="App.scenario.${key}=+this.value;App.render()"></div>`;
+  return `
+  ${syntheticNote}
+  <div class="banner info"><span class="b-badge" style="background:#0d2440;color:var(--accent);border-color:var(--accent2)">Baseline locked</span> The baseline is immutable. Adjust the levers below to compare scenarios against it.</div>
+  <div class="section">
+    <div class="section-head"><div><h3>Scenario levers</h3><div class="desc">Adjust and compare instantly</div></div>
+    <button class="btn sec sm" onclick="App.scenario=null;App.render()">Reset to baseline</button></div>
+    <div class="form-grid">
+      ${sl('Income change (monthly)','income_delta',-3000,3000,50,s.income_delta,fmtMoney)}
+      ${sl('Expense change (monthly)','expense_delta',-2000,2000,50,s.expense_delta,fmtMoney)}
+      ${sl('Debt payment change','debt_delta',-1500,1500,50,s.debt_delta,fmtMoney)}
+      ${sl('Savings contribution change','savings_delta',-1500,1500,50,s.savings_delta,fmtMoney)}
+      ${sl('Home price','home_price',150000,900000,5000,s.home_price,fmtMoney)}
+      ${sl('Interest rate','rate',0.03,0.10,0.00125,s.rate,(v)=>(v*100).toFixed(3)+'%')}
+      ${sl('Down payment','down_payment',0,200000,2500,s.down_payment,fmtMoney)}
+      ${sl('One-time expense','onetime',0,50000,500,s.onetime,fmtMoney)}
+      ${sl('Inflation assumption','inflation',0,0.08,0.0025,s.inflation,(v)=>(v*100).toFixed(2)+'%')}
+    </div>
+  </div>
+  <div class="section">
+    <h3>Baseline vs scenario</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>Metric</th><th class="num">Baseline</th><th class="num">Scenario</th><th class="num">Change</th></tr></thead><tbody>
+      ${row('Monthly cash flow',base.surplus,surplus,fmtMoney,'up')}
+      ${row('Debt-to-income',base.dti,dti,(v)=>fmtPct(v),'down')}
+      ${row('Emergency reserves (months)',base.emergency_months,em,(v)=>v.toFixed(1),'up')}
+      ${row('Housing payment',base.housing,mtg.housing_payment,fmtMoney,'down')}
+      ${row('Back-end DTI (housing)',base.back_end,mtg.back,(v)=>fmtPct(v),'down')}
+      ${row('Affordable home price',base.home_price,mtg.price,fmtMoney,'up')}
+    </tbody></table></div>
+    <hr class="sep">
+    <h3>Recommended actions</h3>
+    ${scenarioAdvice(base,{surplus,dti,em,mtg}).map(a=>`<div class="kv"><span class="k">${badge(a.level)} ${a.text}</span><span class="v"></span></div>`).join('')}
+    <div class="btnrow" style="margin-top:14px"><button class="btn sm" onclick="Actions.saveScenario()">Save this scenario</button></div>
+  </div>`;
+};
+function scenarioAdvice(b,s){
+  const out=[];
+  if(s.surplus<0) out.push({level:'red',text:'Scenario runs a monthly deficit \u2014 reduce expenses or debt before proceeding.'});
+  else if(s.surplus<b.surplus) out.push({level:'amber',text:'Cash flow drops versus baseline; confirm the trade-off is intentional.'});
+  else out.push({level:'green',text:'Cash flow improves or holds versus baseline.'});
+  if(s.mtg.back>36) out.push({level:'red',text:'Back-end DTI exceeds 36% \u2014 lenders may decline; lower price or debt.'});
+  else if(s.mtg.back>28) out.push({level:'amber',text:'Back-end DTI in caution range (28\u201336%).'});
+  if(s.em<3) out.push({level:'red',text:'Emergency reserves fall below 3 months.'});
+  else if(s.em<6) out.push({level:'amber',text:'Emergency reserves below the 6-month target.'});
+  return out;
+}
+
+/* ---------- DOCUMENT REVIEW (disabled external integration) ---------- */
+Views.documents=function(){
+  const db=Store.db;
+  const st=(s)=>({pending_review:'amber',approved:'green',rejected:'red',reprocessing:'blue'}[s]||'gray');
+  return `
+  ${syntheticNote}
+  <div class="disabled-panel" style="margin-bottom:18px">
+    <div class="ico">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    </div>
+    <h4>Document processing is disabled</h4>
+    <p><strong>External AWS integration required.</strong> Live document ingestion, OCR and sanitization are not connected in this prototype.</p>
+    <p>The interface below renders <em>synthetic</em> results in the exact shape an external processing API would return, so review workflows can be validated. No real OCR or sanitization is performed, and no successful extraction is simulated.</p>
+    <div class="btnrow" style="justify-content:center;margin-top:14px"><button class="btn" disabled>Connect processing API</button><button class="btn sec" disabled>Upload document</button></div>
+  </div>
+  <div class="section">
+    <h3>Extraction results (synthetic preview)</h3>
+    <div class="desc">Complete account numbers, SSNs and credentials are never exposed. Approve, correct, reject or reprocess each record.</div>
+    ${db.documents.map(d=>`<div style="border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px">
+      <div class="section-head">
+        <div><h3 style="font-size:13.5px">${d.type} ${badge(st(d.processing_status),d.processing_status.replace('_',' '))} ${badge('gray',d.redaction_status)}</h3>
+        <div class="desc">${d.institution} &middot; ${d.period_start} to ${d.period_end}</div></div>
+      </div>
+      <div class="two-col">
+        <div>
+          <div class="mini" style="margin-bottom:6px">Accounts (masked)</div>
+          ${d.accounts.map(a=>`<div class="kv"><span class="k">${a.type} ${a.mask}</span><span class="v">${a.balance!=null?fmtMoney2(a.balance):'\u2014'}</span></div>`).join('')}
+          <div class="kv"><span class="k">Income detected</span><span class="v">${d.income_detected?fmtMoney(d.income_detected):'\u2014'}</span></div>
+          <div class="kv"><span class="k">Transactions</span><span class="v">${d.tx_count}</span></div>
+          ${d.validation_errors.length?`<div class="kv"><span class="k">Validation</span><span class="v" style="color:var(--amber)">${d.validation_errors.length} issue(s)</span></div>`+d.validation_errors.map(e=>`<div class="mini" style="color:var(--amber)">&bull; ${e}</div>`).join(''):'<div class="kv"><span class="k">Validation</span><span class="v" style="color:var(--green)">Clean</span></div>'}
+        </div>
+        <div>
+          <div class="mini" style="margin-bottom:6px">Extracted fields &amp; confidence</div>
+          ${d.fields.map(f=>`<div class="kv"><span class="k">${f.label}${f.masked?' '+badge('gray','masked'):''}</span><span class="v">${f.value} ${badge(f.confidence>=0.85?'green':f.confidence>=0.7?'amber':'red',(f.confidence*100).toFixed(0)+'%')}</span></div>`).join('')}
+        </div>
+      </div>
+      <div class="btnrow" style="margin-top:12px">
+        <button class="btn sm" onclick="Actions.docAction('${d.id}','approved')">Approve</button>
+        <button class="btn sec sm" onclick="Actions.docAction('${d.id}','corrected')">Correct</button>
+        <button class="btn danger sm" onclick="Actions.docAction('${d.id}','rejected')">Reject</button>
+        <button class="btn ghost sm" onclick="Actions.docAction('${d.id}','reprocessing')">Reprocess</button>
+      </div>
+    </div>`).join('')}
+  </div>`;
+};
+
+/* ---------- SETTINGS & ASSUMPTIONS ---------- */
+Views.settings=function(){
+  const db=Store.db, a=db.settings.assumptions, t=db.settings.thresholds;
+  const audit=db.audit.slice(0,40);
+  const num=(lbl,path,val,step)=>`<div class="field"><label class="fld">${lbl}</label><input type="number" step="${step||1}" value="${val}" onchange="Actions.setSetting('${path}',this.value)"></div>`;
+  return `
+  ${syntheticNote}
+  <div class="section">
+    <h3>Variance thresholds</h3><div class="desc">Configurable status bands (percent unfavorable)</div>
+    <div class="form-grid">
+      ${num('Green within (%)','thresholds.green',t.green)}
+      ${num('Amber up to (%)','thresholds.amber',t.amber)}
+    </div>
+    <div class="mini" style="margin-top:8px">Over the amber ceiling is red. A projected cash flow below zero is always critical.</div>
+  </div>
+  <div class="section">
+    <h3>Simple Mode thresholds</h3><div class="desc">When the plain-language Home shows green, amber, or red (math unchanged)</div>
+    <div class="form-grid">
+      ${num('Thin-margin warning below (% of income)','simple.margin_thin_pct',(db.settings.simple||{}).margin_thin_pct)}
+      ${num('Safety cushion "stable" at (months)','simple.reserve_stable_months',(db.settings.simple||{}).reserve_stable_months,0.5)}
+      ${num('Safety cushion "critical" below (months)','simple.reserve_min_months',(db.settings.simple||{}).reserve_min_months,0.5)}
+      ${num('Essential-coverage floor','simple.coverage_floor',(db.settings.simple||{}).coverage_floor,0.05)}
+    </div>
+  </div>
+  <div class="section">
+    <h3>Planning assumptions</h3><div class="desc">Used across goals, mortgage and scenarios</div>
+    <div class="form-grid">
+      ${num('Default expected return','assumptions.default_return',a.default_return,0.005)}
+      ${num('Inflation','assumptions.inflation',a.inflation,0.0025)}
+      ${num('Emergency-fund target (months)','assumptions.emergency_fund_target_months',a.emergency_fund_target_months)}
+      ${num('Default mortgage rate','assumptions.default_rate',a.default_rate,0.00125)}
+      ${num('Default term (years)','assumptions.default_term_years',a.default_term_years)}
+      ${num('PMI annual %','assumptions.pmi_annual_pct',a.pmi_annual_pct,0.0005)}
+      ${num('Front-end DTI max','assumptions.front_end_max',a.front_end_max,0.01)}
+      ${num('Back-end DTI max','assumptions.back_end_max',a.back_end_max,0.01)}
+      ${num('Conservative back-end','assumptions.conservative_back_end',a.conservative_back_end,0.01)}
+      ${num('Balanced back-end','assumptions.balanced_back_end',a.balanced_back_end,0.01)}
+      ${num('Maintenance reserve %/yr','assumptions.maintenance_reserve_pct',a.maintenance_reserve_pct,0.0025)}
+    </div>
+  </div>
+  <div class="section">
+    <h3>Data &amp; privacy</h3>
+    <div class="kv"><span class="k">Storage scope</span><span class="v">Private &middot; user_id ${USER_ID}</span></div>
+    <div class="kv"><span class="k">Storage location</span><span class="v">Local device only (no shared space)</span></div>
+    <div class="kv"><span class="k">Dataset</span><span class="v">Synthetic demonstration</span></div>
+    <div class="btnrow" style="margin-top:12px">
+      <button class="btn sec sm" onclick="Actions.exportData()">Export my data (JSON)</button>
+      <button class="btn danger sm" onclick="Actions.resetData()">Reset synthetic dataset</button>
+    </div>
+  </div>
+  <div class="section">
+    <h3>Audit history</h3><div class="desc">Approvals, corrections, calculations and scenario changes</div>
+    ${audit.length?`<div class="tbl-wrap"><table><thead><tr><th>When</th><th>Type</th><th>Detail</th></tr></thead>
+    <tbody>${audit.map(x=>`<tr><td>${new Date(x.at).toLocaleString()}</td><td>${badge('gray',x.kind)}</td><td>${x.detail}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No audit entries yet</div>'}
+  </div>`;
+};
+
+/* ============================================================
+   ACTIONS  (mutations — all confirm-gated where they touch verified data)
+   ============================================================ */
+const Actions={
+  reconcile(id,decision){
+    const r=Store.db.reconcile.find(x=>x.id===id); if(!r)return;
+    if(decision==='approved' && !confirm('Approve this extracted record? It will be marked verified. Confirm to modify verified data.')) return;
+    r.decision=decision; r.updated_at=nowISO(); r.verification_status = decision==='approved'?'verified':'rejected';
+    Store.log('reconcile','Record "'+r.transaction+'" '+decision); Store.save(); toast('Record '+decision, decision==='approved'?'green':'red'); App.render();
+  },
+  reconcileCorrect(id){
+    const r=Store.db.reconcile.find(x=>x.id===id); if(!r)return;
+    const v=prompt('Corrected category for "'+r.transaction+'":', r.proposed_category); if(v===null)return;
+    r.proposed_category=v; r.decision='corrected'; r.verification_status='verified'; r.updated_at=nowISO();
+    Store.log('correction','Corrected "'+r.transaction+'" category to '+v); Store.save(); toast('Correction saved','amber'); App.render();
+  },
+  docAction(id,action){
+    const d=Store.db.documents.find(x=>x.id===id); if(!d)return;
+    if(action==='approved' && !confirm('Approve this document? Extracted values become verified records. Confirm to proceed.')) return;
+    d.processing_status = action==='reprocessing'?'reprocessing':action; d.updated_at=nowISO();
+    if(action==='approved'){ d.verification_status='verified'; d.fields.forEach(f=>f.verified=true); }
+    Store.log('document', d.type+' '+action); Store.save(); toast('Document '+action, action==='approved'?'green':action==='rejected'?'red':'amber'); App.render();
+  },
+  setSetting(path,val){
+    const parts=path.split('.'); let o=Store.db.settings; for(let i=0;i<parts.length-1;i++)o=o[parts[i]];
+    o[parts[parts.length-1]] = parseFloat(val);
+    Store.db.settings.updated_at=nowISO();
+    Store.log('settings','Changed '+path+' to '+val); Store.save(); toast('Setting updated','green'); App.render();
+  },
+  editIncome(){
+    const db=Store.db;
+    modal('Edit income', db.income.map((i,idx)=>`
+      <div class="form-grid" style="margin-bottom:12px">
+        <div class="field"><label class="fld">Source</label><input value="${i.name}" data-i="${idx}" data-k="name"></div>
+        <div class="field"><label class="fld">Gross</label><input type="number" value="${i.gross||0}" data-i="${idx}" data-k="gross"></div>
+        <div class="field"><label class="fld">Net</label><input type="number" value="${i.amount}" data-i="${idx}" data-k="amount"></div>
+      </div>`).join('')+'<div class="mini">Available credit is never counted as income.</div>',
+      ()=>{ document.querySelectorAll('#modal input[data-i]').forEach(el=>{const i=+el.dataset.i,k=el.dataset.k;db.income[i][k]=k==='name'?el.value:parseFloat(el.value)||0;db.income[i].updated_at=nowISO();});
+        Store.log('income','Edited income sources'); Store.save(); toast('Income updated','green'); App.render(); });
+  },
+  addCat(){ this._catForm(null); },
+  editCat(id){ this._catForm(id); },
+  _catForm(id){
+    const db=Store.db; const c=id?db.budget.find(x=>x.id===id):{name:'',type:'variable',budgeted:0};
+    modal(id?'Edit category':'Add category',`
+      <div class="form-grid">
+        <div class="field"><label class="fld">Name</label><input id="c-name" value="${c.name}"></div>
+        <div class="field"><label class="fld">Type</label><select id="c-type">${['fixed','variable','debt','savings','sinking'].map(t=>`<option ${c.type===t?'selected':''} value="${t}">${typeLabel[t]}</option>`).join('')}</select></div>
+        <div class="field"><label class="fld">Monthly budget</label><input id="c-bud" type="number" value="${c.budgeted||0}"></div>
+        <div class="field"><label class="fld">Balance (debt)</label><input id="c-bal" type="number" value="${c.balance||0}"></div>
+        <div class="field"><label class="fld">APR % (debt)</label><input id="c-apr" type="number" step="0.1" value="${c.apr||0}"></div>
+      </div>`,
+      ()=>{ const o={name:val('c-name'),type:val('c-type'),budgeted:+val('c-bud'),balance:+val('c-bal'),apr:+val('c-apr')};
+        if(id){ Object.assign(c,o); c.updated_at=nowISO(); Store.log('budget','Edited category '+o.name); }
+        else { db.budget.push(Object.assign({id:uid('cat'),created_at:nowISO(),updated_at:nowISO(),source:'user',verification_status:'verified',user_id:USER_ID},o)); Store.log('budget','Added category '+o.name); }
+        Store.save(); toast('Category saved','green'); App.render(); },
+      id?[{label:'Delete',cls:'danger',fn:()=>{if(confirm('Delete this category?')){Store.db.budget=db.budget.filter(x=>x.id!==id);Store.log('budget','Deleted category '+c.name);Store.save();closeModal();toast('Deleted','red');App.render();}}}]:[]);
+  },
+  addGoal(){ this._goalForm(null); },
+  editGoal(id){ this._goalForm(id); },
+  _goalForm(id){
+    const db=Store.db; const g=id?db.goals.find(x=>x.id===id):{name:'',target:0,current:0,target_date:addMonths(12),priority:'Medium',exp_return:db.settings.assumptions.default_return};
+    modal(id?'Edit goal':'Add goal',`
+      <div class="form-grid">
+        <div class="field"><label class="fld">Target name</label><input id="g-name" value="${g.name}"></div>
+        <div class="field"><label class="fld">Target amount</label><input id="g-target" type="number" value="${g.target}"></div>
+        <div class="field"><label class="fld">Current amount</label><input id="g-current" type="number" value="${g.current}"></div>
+        <div class="field"><label class="fld">Target date</label><input id="g-date" type="date" value="${(g.target_date||'').slice(0,10)}"></div>
+        <div class="field"><label class="fld">Priority</label><select id="g-pri">${['High','Medium','Low'].map(p=>`<option ${g.priority===p?'selected':''}>${p}</option>`).join('')}</select></div>
+        <div class="field"><label class="fld">Expected return</label><input id="g-ret" type="number" step="0.005" value="${g.exp_return}"></div>
+      </div>`,
+      ()=>{ const o={name:val('g-name'),target:+val('g-target'),current:+val('g-current'),target_date:new Date(val('g-date')).toISOString(),priority:val('g-pri'),exp_return:+val('g-ret')};
+        if(id){ Object.assign(g,o); g.updated_at=nowISO(); Store.log('goal','Edited goal '+o.name); }
+        else { db.goals.push(Object.assign({id:uid('goal'),created_at:nowISO(),updated_at:nowISO(),source:'user',verification_status:'verified',user_id:USER_ID},o)); Store.log('goal','Added goal '+o.name); }
+        Store.save(); toast('Goal saved','green'); App.render(); },
+      id?[{label:'Delete',cls:'danger',fn:()=>{if(confirm('Delete this goal?')){Store.db.goals=db.goals.filter(x=>x.id!==id);Store.log('goal','Deleted goal '+g.name);Store.save();closeModal();toast('Deleted','red');App.render();}}}]:[]);
+  },
+  editMortgage(){
+    const db=Store.db,m=db.mortgage;
+    const f=[['home_price','Home price'],['down_payment','Down payment'],['rate','Interest rate'],['term_years','Term (years)'],['gross_monthly','Gross monthly income'],['net_monthly','Net monthly income'],['existing_debt','Existing debt payments'],['property_tax_annual','Property taxes (annual)'],['insurance_annual','Insurance (annual)'],['hoa_monthly','HOA (monthly)'],['pmi_annual_pct','PMI annual %'],['closing_pct','Closing cost %'],['maintenance_pct','Maintenance %/yr'],['emergency_required','Emergency-fund requirement']];
+    modal('Edit mortgage inputs','<div class="form-grid">'+f.map(([k,l])=>`<div class="field"><label class="fld">${l}</label><input id="m-${k}" type="number" step="any" value="${m[k]}"></div>`).join('')+'</div>',
+      ()=>{ f.forEach(([k])=>{m[k]=parseFloat(val('m-'+k))||0;}); m.updated_at=nowISO(); Store.log('mortgage','Updated mortgage inputs'); Store.save(); toast('Mortgage inputs saved','green'); App.render(); });
+  },
+  saveScenario(){
+    const s=clone(App.scenario); s.id=uid('scn'); s.saved_at=nowISO();
+    Store.db.scenarios.push(s); Store.log('scenario','Saved a scenario comparison'); Store.save(); toast('Scenario saved','green');
+  },
+  exportData(){
+    const blob=new Blob([JSON.stringify(Store.db,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='financial_planner_synthetic_export.json'; a.click();
+    Store.log('data','Exported data as JSON'); toast('Export started','green');
+  },
+  resetData(){ if(confirm('Reset to the synthetic demonstration dataset? This clears local changes.')){ Store.reset(); toast('Dataset reset','amber'); App.render(); } }
+};
+const val=(id)=>document.getElementById(id).value;
+
+/* ---------- modal + toast ---------- */
+function modal(title, body, onSave, extraBtns){
+  const mb=document.getElementById('modalBg'), m=document.getElementById('modal');
+  const extra=(extraBtns||[]).map((b,i)=>`<button class="btn ${b.cls||'sec'} sm" data-x="${i}">${b.label}</button>`).join('');
+  m.innerHTML=`<div class="modal-head"><h3>${title}</h3><button class="x-btn" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">${body}</div>
+    <div class="modal-foot">${extra}<button class="btn sec" onclick="closeModal()">Cancel</button><button class="btn" id="modalSave">Save</button></div>`;
+  mb.classList.add('open');
+  document.getElementById('modalSave').onclick=()=>{ onSave&&onSave(); closeModal(); };
+  (extraBtns||[]).forEach((b,i)=>{ m.querySelector(`[data-x="${i}"]`).onclick=b.fn; });
+}
+function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
+document.getElementById('modalBg').addEventListener('click',e=>{ if(e.target.id==='modalBg') closeModal(); });
+function toast(msg,cls){ const t=document.getElementById('toast'); t.className='toast '+(cls||''); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ============================================================
+   AI FINANCIAL ASSISTANT  (grounded only in stored data)
+   ============================================================ */
+const Assistant={
+  open:false,
+  init(){
+    this.suggest();
+    this.push('bot', "I answer only from your stored data, approved records, the selected scenario, and your documented assumptions. I show my calculations, separate <span class='tag v'>verified</span> values from <span class='tag e'>estimates</span>, and I will ask for anything missing rather than invent it.");
+  },
+  toggle(){ this.open=!this.open; document.getElementById('assistant').classList.toggle('open',this.open); document.getElementById('fab').style.display=this.open?'none':'flex'; if(this.open) document.getElementById('asstInput').focus(); },
+  suggest(){
+    const qs=['What is my free cash flow?','Can I afford a home?','How am I tracking to my goals?','What is my highest-impact move?','What is my emergency fund status?'];
+    document.getElementById('asstSuggest').innerHTML=qs.map(q=>`<button onclick="Assistant.ask('${q.replace(/'/g,"\\'")}')">${q}</button>`).join('');
+  },
+  push(who,html){ const b=document.getElementById('asstBody'); const d=document.createElement('div'); d.className='msg '+who; d.innerHTML=html; b.appendChild(d); b.scrollTop=b.scrollHeight; },
+  send(){ const i=document.getElementById('asstInput'); const q=i.value.trim(); if(!q)return; i.value=''; this.ask(q); },
+  ask(q){ this.push('user', q.replace(/</g,'&lt;')); const ans=this.answer(q); setTimeout(()=>this.push('bot',ans),140); Store.log('assistant','Q: '+q); },
+  answer(q){
+    const db=Store.db; const s=q.toLowerCase();
+    const V="<span class='tag v'>verified</span>", E="<span class='tag e'>estimate</span>";
+    const calc=(t)=>`<div class='calc'>${t}</div>`;
+    // free cash flow / surplus
+    if(/(cash flow|surplus|free cash|left over|leftover)/.test(s)){
+      const ni=Calc.netIncome(db),ex=Calc.totalExpenses(db),d=Calc.debtPayments(db),sv=Calc.plannedSavings(db),fcf=Calc.monthlySurplus(db);
+      return `${V} Your monthly free cash flow is <b>${fmtMoney(fcf)}</b>.`+calc(`monthly_surplus = net_income - expenses - debt - savings\n= ${fmtMoney(ni)} - ${fmtMoney(ex)} - ${fmtMoney(d)} - ${fmtMoney(sv)}\n= ${fmtMoney(fcf)}`)+(fcf<0?'This is a deficit \u2014 reducing variable spending is the fastest lever.':'This surplus is available for goals or debt.');
+    }
+    // afford home / mortgage
+    if(/(afford|mortgage|house|home|buy)/.test(s)){
+      const m=Calc.mortgage(db); const ready=m.back<=36&&m.front<=28&&m.reserves_after>=m.emergency_required;
+      return `${E} Planning estimate only \u2014 not a lender decision. At a ${fmtMoney(m.price)} home price your housing payment is about <b>${fmtMoney(m.housing_payment)}</b>.`+
+        calc(`front_end_DTI = housing / gross = ${fmtMoney(m.housing_payment)} / ${fmtMoney(m.gross)} = ${fmtPct(m.front)}\nback_end_DTI = (housing + debt) / gross = (${fmtMoney(m.housing_payment)} + ${fmtMoney(m.existing_debt)}) / ${fmtMoney(m.gross)} = ${fmtPct(m.back)}\nreserves after closing = ${fmtMoney(m.reserves_after)} (need ${fmtMoney(m.emergency_required)})`)+
+        (ready?'You meet conservative front/back-end and reserve thresholds.':'One or more thresholds are exceeded \u2014 see Mortgage Readiness for improvement levers.');
+    }
+    // goals
+    if(/(goal|save|target|contribut)/.test(s)){
+      const lines=db.goals.map(g=>{const gc=Calc.goalCompute(db,g);return `\u2022 ${g.name}: ${gc.progress.toFixed(0)}% funded, needs ${fmtMoney2(gc.required_monthly)}/mo (gap ${fmtMoney2(gc.gap)})`;}).join('<br>');
+      return `${V+E} Goal tracking (targets verified, growth estimated):<br>${lines}`;
+    }
+    // emergency fund
+    if(/(emergency|reserve|rainy)/.test(s)){
+      const em=Calc.emergencyMonths(db);
+      return `${V} You have <b>${em.toFixed(1)} months</b> of emergency coverage (target ${db.settings.assumptions.emergency_fund_target_months}).`+(em<3?' Below the 3-month floor \u2014 prioritize this.':em<6?' Building toward the 6-month target.':' Fully funded.');
+    }
+    // debt
+    if(/(debt|owe|loan|credit card|dti|income ratio)/.test(s)){
+      const td=Calc.totalDebt(db),dti=Calc.dti(db);
+      const hi=Calc.byType(db,'debt').slice().sort((a,b)=>(b.apr||0)-(a.apr||0))[0];
+      return `${V} Total debt is <b>${fmtMoney(td)}</b>; debt-to-income is <b>${fmtPct(dti)}</b>.`+calc(`DTI = debt_payments / net_income = ${fmtMoney(Calc.debtPayments(db))} / ${fmtMoney(Calc.netIncome(db))} = ${fmtPct(dti)}`)+(hi?`Highest-rate balance: ${hi.name} at ${hi.apr}% \u2014 target it first (avalanche).`:'');
+    }
+    // net worth
+    if(/(net worth|networth|wealth)/.test(s)){
+      const nw=Calc.netWorth(db);
+      return `${V} Estimated net worth is <b>${fmtMoney(nw)}</b>.`+calc(`net_worth = assets - debt = ${fmtMoney(db.accounts.reduce((a,x)=>a+(+x.balance||0),0))} - ${fmtMoney(Calc.totalDebt(db))} = ${fmtMoney(nw)}`);
+    }
+    // highest impact
+    if(/(impact|priorit|recommend|advice|should i|best move|focus)/.test(s)){
+      return this.recommendation();
+    }
+    // variance
+    if(/(variance|over budget|overspend|spend)/.test(s)){
+      const top=Calc.topUnfavorable(db,App.varMonth,3);
+      if(!top.length) return `${V} No unfavorable variances this month \u2014 spending is within budget.`;
+      return `${V} Top overspend this month:<br>`+top.map(r=>`\u2022 ${r.category}: +${fmtMoney(r.variance_amount)} (${fmtPct(r.variance_percentage)})`).join('<br>');
+    }
+    // unknown / missing data
+    return `I can only answer from your stored data, approved records, the selected scenario, and documented assumptions \u2014 and I won't guess. I can cover cash flow, budget variance, goals, debt, emergency fund, net worth, mortgage affordability, or your highest-impact move. Could you rephrase toward one of those, or tell me which value you'd like me to use if something's missing?`;
+  },
+  recommendation(){
+    const db=Store.db; const cand=[];
+    const fcf=Calc.monthlySurplus(db); const em=Calc.emergencyMonths(db); const dti=Calc.dti(db);
+    const hi=Calc.byType(db,'debt').slice().sort((a,b)=>(b.apr||0)-(a.apr||0))[0];
+    if(fcf<0) cand.push({score:100,text:`Close the monthly deficit of ${fmtMoney(-fcf)} first \u2014 trim the largest variable categories.`});
+    if(em<3) cand.push({score:90,text:`Build emergency reserves to 3 months; you're at ${em.toFixed(1)}. This protects every other plan.`});
+    if(hi&&hi.apr>=18) cand.push({score:85,text:`Attack the ${hi.name} at ${hi.apr}% APR \u2014 highest guaranteed return via avalanche.`});
+    if(dti>25) cand.push({score:70,text:`Lower debt-to-income (now ${fmtPct(dti)}) before taking on a mortgage.`});
+    if(!cand.length) cand.push({score:50,text:`Cash flow, reserves and debt look healthy \u2014 direct surplus (${fmtMoney(fcf)}) to your highest-priority goal.`});
+    cand.sort((a,b)=>b.score-a.score); const top=cand[0];
+    return `<span class='tag v'>verified</span> Highest-impact recommendation: <b>${top.text}</b><br><span class='mini'>Ranked from your current stored figures; this is planning guidance, not investment, tax or legal advice.</span>`;
+  }
+};
+
+/* ---------- boot ---------- */
+App.init();
+
+</script>
+<script>
+/* ===== reco.js (inlined) ===== */
+/* ============================================================
+   RECOMMENDATION ENGINE  (extension module)
+   Loaded after app.js + ui.js. Reuses Store, Calc, helpers.
+   Adds: engine, Recommendation Center view, budget-run report,
+   explainability, plan bundles, data-quality gate, history.
+   Touches no existing view, formula, or privacy control.
+   ============================================================ */
+'use strict';
+
+/* ---- lazy settings extensions (non-destructive) ---- */
+(function initRecoSettings(){
+  const a=Store.db.settings.assumptions;
+  const def={
+    reserve_target_months:4,          // user-configurable emergency target (NOT auto-6)
+    min_cash_reserve:2000,            // protected liquid floor
+    credit_apr_threshold:15,          // % APR above which acceleration is evaluated
+    variable_income:false,            // triggers conservative assumptions
+    tax_rate:null,                    // must be user-provided/approved; null => not assumed
+    purchase_within_months:30         // mortgage timeline
+  };
+  let changed=false;
+  for(const k in def){ if(a[k]===undefined){ a[k]=def[k]; changed=true; } }
+  if(!Store.db.reco_runs) { Store.db.reco_runs=[]; changed=true; }
+  if(!Store.db.reco_status) { Store.db.reco_status={}; changed=true; }   // {recoKey:{status,reason,at}}
+  if(!Store.db.reco_plan) { Store.db.reco_plan='balanced'; changed=true; }
+  if(changed) Store.save();
+})();
+
+/* ============================================================
+   Classification helpers (traceable, keyword-based)
+   ============================================================ */
+const RecoData = {
+  essentialKeywords:/rent|mortgage|utilit|insurance|grocer|transport|fuel|phone|internet|medical|health|child|day ?care/i,
+  isEssentialCat(c){
+    if(c.type==='fixed') return true;
+    if(c.type==='variable') return this.essentialKeywords.test(c.name);
+    return false;
+  },
+  essentialExpenses(db){ return db.budget.filter(c=>(c.type==='fixed'||c.type==='variable')&&this.isEssentialCat(c)).reduce((s,c)=>s+(+c.budgeted||0),0); },
+  discretionaryExpenses(db){ return db.budget.filter(c=>(c.type==='variable')&&!this.isEssentialCat(c)).reduce((s,c)=>s+(+c.budgeted||0),0); },
+  minDebtPayments(db){ return Calc.byType(db,'debt').reduce((s,c)=>s+(+c.minimum||+c.budgeted||0),0); },
+  liquidEmergency(db){ return db.accounts.filter(a=>a.type==='savings'||a.type==='checking').reduce((s,a)=>s+(+a.balance||0),0); },
+  reducibleCats(db){ // discretionary categories, largest first
+    return db.budget.filter(c=>c.type==='variable'&&!this.isEssentialCat(c)).slice().sort((a,b)=>(+b.budgeted)-(+a.budgeted));
+  }
+};
+
+/* ============================================================
+   Data-quality gate
+   ============================================================ */
+const DataQuality = {
+  score(db){
+    // completeness: required fields present across income, budget, mortgage, goals, accounts
+    let filled=0, total=0;
+    const need=(v)=>{ total++; if(v!==undefined&&v!==null&&v!==''&&!(typeof v==='number'&&isNaN(v))) filled++; };
+    db.income.forEach(i=>{ need(i.amount); need(i.gross); });
+    db.budget.forEach(c=>{ need(c.budgeted); if(c.type==='debt'){ need(c.apr); need(c.balance); need(c.minimum); } });
+    ['gross_monthly','net_monthly','existing_debt','rate','home_price','down_payment'].forEach(k=>need(db.mortgage[k]));
+    db.goals.forEach(g=>{ need(g.target); need(g.current); need(g.target_date); });
+    const completeness = total? filled/total*100 : 0;
+
+    // verification: share of records marked verified
+    const recs=[].concat(db.income,db.budget,db.goals,db.accounts,db.documents,db.reconcile);
+    const verified=recs.filter(r=>r.verification_status==='verified').length;
+    const verification = recs.length? verified/recs.length*100 : 0;
+
+    // recency: newest updated_at across records vs 45-day window
+    const times=recs.map(r=>+new Date(r.updated_at||r.created_at||0)).filter(Boolean);
+    const newest=times.length?Math.max(...times):0;
+    const days=(Date.now()-newest)/86400000;
+    const recency = Math.max(0, Math.min(100, 100 - (days/45*100)));
+
+    // reconciliation: share of queue resolved (approved/rejected/corrected)
+    const q=db.reconcile; const resolved=q.filter(r=>r.decision!=='pending').length;
+    const reconciliation = q.length? resolved/q.length*100 : 100;
+
+    const dq = completeness*0.35 + verification*0.30 + recency*0.20 + reconciliation*0.15;
+    return {score:dq, completeness, verification, recency, reconciliation,
+      band: dq>=90?'High confidence':dq>=75?'Reliable with minor gaps':dq>=60?'Provisional':'Insufficient for major decisions',
+      sufficientForMajor: dq>=60,
+      gaps: this.gaps(db,{completeness,verification,recency,reconciliation})};
+  },
+  gaps(db,d){
+    const g=[];
+    if(d.verification<80) g.push('Approve pending records in the Verification queue to raise verification coverage.');
+    if(d.reconciliation<100) g.push(db.reconcile.filter(r=>r.decision==='pending').length+' reconciliation item(s) still pending.');
+    if(d.recency<70) g.push('Some records have not been updated recently — confirm balances are current.');
+    const missDebt=Calc.byType(db,'debt').filter(c=>!c.apr||!c.minimum);
+    if(missDebt.length) g.push('Missing APR/minimum on debt: '+missDebt.map(c=>c.name).join(', ')+'.');
+    return g;
+  }
+};
+
+/* ============================================================
+   Scoring
+   ============================================================ */
+function score(impact,urgency,risk,feasibility,confidence){
+  const s = impact*0.30 + urgency*0.25 + risk*0.20 + feasibility*0.15 + confidence*0.10;
+  return Math.max(0,Math.min(100,Math.round(s)));
+}
+function classify(sc){ return sc>=80?'Immediate priority':sc>=65?'High priority':sc>=45?'Moderate priority':'Monitor or optional'; }
+function classBadge(sc){ return sc>=80?'red':sc>=65?'amber':sc>=45?'blue':'gray'; }
+
+/* ============================================================
+   Core engine — evaluate 10 areas, emit recommendation objects
+   Each reco: {key, area, rankTier, action, why, current, proposed,
+     monthly, annual, goalEffect, debtEffect, mortgageEffect, risk,
+     dims:{impact,urgency,risk,feasibility,confidence}, score, calc[],
+     dataUsed[], firstAction, reviewDate, provisional}
+   ============================================================ */
+const Reco = {
+  build(db){
+    const dq=DataQuality.score(db);
+    const conf = Math.round(dq.score);              // confidence tied to data quality
+    const provisional = conf<60;
+    const ni=Calc.netIncome(db);
+    const ess=RecoData.essentialExpenses(db);
+    const disc=RecoData.discretionaryExpenses(db);
+    const minDebt=RecoData.minDebtPayments(db);
+    const savings=Calc.plannedSavings(db);
+    const fcf = ni - ess - disc - minDebt - savings;                 // spec free_cash_flow
+    const ecr = (ess+minDebt)? ni/(ess+minDebt) : 99;                // essential coverage ratio
+    const liquid=RecoData.liquidEmergency(db);
+    const em = ess? liquid/ess : 0;                                  // months on ESSENTIAL expenses
+    const a=db.settings.assumptions;
+    const list=[];
+    const reviewDate = addMonths(1).slice(0,10);
+    const src=(arr)=>arr;
+
+    /* ---- 1 & 3. Cash-flow stability / negative cash flow ---- */
+    if(fcf < 0){
+      const shortfall=-fcf;
+      const grossNeeded = a.tax_rate!=null ? shortfall/(1-a.tax_rate) : null;
+      const cuts=RecoData.reducibleCats(db);
+      const cutPlan=[]; let acc=0; for(const c of cuts){ if(acc>=shortfall)break; const take=Math.min(+c.budgeted*0.5, shortfall-acc); cutPlan.push({name:c.name,amt:take}); acc+=take; }
+      list.push(this.mk({
+        key:'cashflow-deficit', area:'Cash-flow stability', rankTier:3,
+        action:`Close the ${fmtMoney(shortfall)}/mo cash-flow deficit`,
+        why:'Spending plus minimum obligations exceed net income; every month adds to fragility.',
+        current:`Free cash flow ${fmtMoney(fcf)}/mo (negative).`,
+        proposed:`Expense-only: cut ${fmtMoney(shortfall)}. Income-only: ${grossNeeded!=null?('+'+fmtMoney(grossNeeded)+' gross'):'gross figure needs an approved tax rate'}. Blended: split across both.`,
+        monthly:shortfall, annual:shortfall*12,
+        goalEffect:'Deficit currently blocks all discretionary goal funding.',
+        debtEffect:'Prevents building beyond minimum payments.',
+        mortgageEffect:'A negative cash flow disqualifies sustainable affordability regardless of DTI.',
+        risk:'Expense cuts affect lifestyle; income changes take time to realize.',
+        dims:{impact:95,urgency:98,risk:90,feasibility:cuts.length?70:45,confidence:conf},
+        calc:[
+          `free_cash_flow = net_income − essential − discretionary − min_debt − savings`,
+          `= ${fmtMoney(ni)} − ${fmtMoney(ess)} − ${fmtMoney(disc)} − ${fmtMoney(minDebt)} − ${fmtMoney(savings)} = ${fmtMoney(fcf)}`,
+          grossNeeded!=null? `income_needed = shortfall / (1 − tax_rate) = ${fmtMoney(shortfall)} / (1 − ${a.tax_rate}) = ${fmtMoney(grossNeeded)}` : `income route: no tax rate approved — gross requirement withheld (Rule: do not assume a tax rate).`,
+          cutPlan.length? `expense route (top discretionary): ${cutPlan.map(x=>x.name+' −'+fmtMoney(x.amt)).join(', ')}` : ''
+        ].filter(Boolean),
+        dataUsed:['Income','Budget categories','Debt minimums'],
+        firstAction: cutPlan.length? `Reduce ${cutPlan[0].name} by ${fmtMoney(cutPlan[0].amt)} this week.` : 'Identify one discretionary category to cut.',
+        reviewDate, provisional
+      }));
+    } else if(ni>0 && fcf/ni < 0.05){
+      list.push(this.mk({
+        key:'cashflow-thin', area:'Cash-flow stability', rankTier:4,
+        action:`Widen the thin ${fmtPct(fcf/ni*100)} cash-flow margin`,
+        why:'A margin under 5% leaves no buffer for variance or surprises.',
+        current:`Free cash flow ${fmtMoney(fcf)}/mo = ${fmtPct(fcf/ni*100)} of net income.`,
+        proposed:`Target a 10% margin (${fmtMoney(ni*0.10)}/mo) by trimming discretionary spend ${fmtMoney(Math.max(0,ni*0.10-fcf))}.`,
+        monthly:Math.max(0,ni*0.10-fcf), annual:Math.max(0,ni*0.10-fcf)*12,
+        goalEffect:'Frees room to fund goals steadily.', debtEffect:'Creates capacity above minimums.',
+        mortgageEffect:'Improves sustainable affordability buffer.',
+        risk:'Requires trimming discretionary categories.',
+        dims:{impact:60,urgency:55,risk:55,feasibility:75,confidence:conf},
+        calc:[`margin = free_cash_flow / net_income = ${fmtMoney(fcf)} / ${fmtMoney(ni)} = ${fmtPct(fcf/ni*100)}`],
+        dataUsed:['Income','Budget categories'], firstAction:'Pick one discretionary line to reduce 10%.', reviewDate, provisional
+      }));
+    }
+
+    /* ---- 2. Essential coverage (protect essentials) ---- */
+    if(ecr < 1.0){
+      list.push(this.mk({
+        key:'essential-coverage', area:'Essential coverage', rankTier:2,
+        action:'Restore essential-expense coverage above 1.0',
+        why:'Net income does not fully cover essentials plus minimum debt — the most urgent structural risk.',
+        current:`essential_coverage_ratio = ${ecr.toFixed(2)} (below 1.0).`,
+        proposed:`Increase income or cut essentials/min-debt so coverage ≥ 1.0. Gap ≈ ${fmtMoney((ess+minDebt)-ni)}/mo.`,
+        monthly:Math.max(0,(ess+minDebt)-ni), annual:Math.max(0,(ess+minDebt)-ni)*12,
+        goalEffect:'All goal funding suspended until covered.', debtEffect:'Risk of missed minimums.',
+        mortgageEffect:'Home purchase not sustainable at this coverage.',
+        risk:'May require renegotiating fixed costs or debt terms.',
+        dims:{impact:98,urgency:99,risk:95,feasibility:55,confidence:conf},
+        calc:[`essential_coverage_ratio = net_income / (essential + min_debt) = ${fmtMoney(ni)} / (${fmtMoney(ess)} + ${fmtMoney(minDebt)}) = ${ecr.toFixed(2)}`],
+        dataUsed:['Income','Fixed & essential categories','Debt minimums'],
+        firstAction:'Contact lenders about hardship/minimum options; list negotiable fixed costs.', reviewDate, provisional
+      }));
+    }
+
+    /* ---- 5 (rank), Emergency reserves ---- */
+    const targetM=a.reserve_target_months;
+    const targetFund=ess*targetM;
+    const gap=targetFund-liquid;
+    const band = em<1?'Critical':em<3?'Vulnerable':em<6?'Stable':'Strong';
+    if(gap>0 && fcf>=0){
+      const reqContribution=gap/targetM;
+      list.push(this.mk({
+        key:'emergency-fund', area:'Emergency reserves', rankTier:4,
+        action:`Build emergency reserves toward ${targetM} months`,
+        why:`Reserves are ${em.toFixed(1)} months of essentials (${band}); the configured target is ${targetM}.`,
+        current:`Liquid reserves ${fmtMoney(liquid)} = ${em.toFixed(1)} months.`,
+        proposed:`Contribute ${fmtMoney(reqContribution)}/mo to close the ${fmtMoney(gap)} gap over ${targetM} months.`,
+        monthly:reqContribution, annual:reqContribution*12,
+        goalEffect:'Competes with discretionary goals until minimum band reached.',
+        debtEffect:'Protects against debt-financed emergencies.',
+        mortgageEffect:'Higher reserves strengthen post-closing safety.',
+        risk:`Directing ${fmtMoney(reqContribution)}/mo here slows other goals.`,
+        dims:{impact:70,urgency:em<1?92:em<3?75:45,risk:80,feasibility:fcf>=reqContribution?80:40,confidence:conf},
+        calc:[
+          `target_emergency_fund = essential × target_months = ${fmtMoney(ess)} × ${targetM} = ${fmtMoney(targetFund)}`,
+          `emergency_fund_gap = target − current = ${fmtMoney(targetFund)} − ${fmtMoney(liquid)} = ${fmtMoney(gap)}`,
+          `required_monthly = gap / target_months = ${fmtMoney(gap)} / ${targetM} = ${fmtMoney(reqContribution)}`
+        ],
+        dataUsed:['Savings/checking balances','Essential expenses','Reserve target (Settings)'],
+        firstAction:`Automate ${fmtMoney(reqContribution)} to the emergency account on payday.`, reviewDate, provisional
+      }));
+    }
+
+    /* ---- 5. High-interest debt (protect reserve first) ---- */
+    const debts=Calc.byType(db,'debt').slice();
+    const hi=debts.filter(c=>(+c.apr||0)>=a.credit_apr_threshold).sort((x,y)=>(+y.apr)-(+x.apr))[0];
+    const reserveProtected = liquid>=a.min_cash_reserve && em>=1;
+    if(hi){
+      const extra = fcf>0? Math.min(fcf, Math.max(50, fcf*0.5)) : 0;
+      const payoff=this.payoff(+hi.balance,+hi.apr, (+hi.minimum||+hi.budgeted)+extra);
+      const base=this.payoff(+hi.balance,+hi.apr,(+hi.minimum||+hi.budgeted));
+      const saved=base.interest-payoff.interest;
+      list.push(this.mk({
+        key:'debt-highapr-'+hi.id, area:'High-interest debt', rankTier: reserveProtected?5:9,
+        action:`Accelerate payoff of ${hi.name} (${(+hi.apr).toFixed(1)}% APR)`,
+        why:`Highest-cost balance; paying it early is a guaranteed ${(+hi.apr).toFixed(1)}% return.`,
+        current:`Balance ${fmtMoney(hi.balance)}, min ${fmtMoney(hi.minimum||hi.budgeted)}/mo, payoff ${base.months} mo, interest ${fmtMoney(base.interest)}.`,
+        proposed: reserveProtected? `Add ${fmtMoney(extra)}/mo → payoff ${payoff.months} mo, interest ${fmtMoney(payoff.interest)}.` : `Reserves below floor — pay minimum only until the ${fmtMoney(a.min_cash_reserve)} reserve is restored, then accelerate.`,
+        monthly: reserveProtected? -extra : 0, annual: reserveProtected? saved : 0,
+        goalEffect: reserveProtected? `Delays discretionary goals by the reallocated ${fmtMoney(extra)}/mo.` : 'No goal impact while paying minimum.',
+        debtEffect:`Interest saved ≈ ${fmtMoney(saved)}; releases ${fmtMoney(hi.minimum||hi.budgeted)}/mo after payoff.`,
+        mortgageEffect:`Removing this payment lowers back-end DTI.`,
+        risk: reserveProtected? 'Ties up cash that could serve emergencies.' : 'Acceleration deferred to protect liquidity (Rule: preserve minimum reserve).',
+        dims:{impact:82,urgency:(+hi.apr>=22?85:70),risk:75,feasibility:reserveProtected&&fcf>0?80:35,confidence:conf},
+        calc:[
+          `interest_saved = interest(min) − interest(min+extra)`,
+          `= ${fmtMoney(base.interest)} − ${fmtMoney(payoff.interest)} = ${fmtMoney(saved)}`,
+          `payoff_months(min+extra) via amortization at ${(+hi.apr).toFixed(1)}% = ${payoff.months} months`
+        ],
+        dataUsed:[`Debt: ${hi.name}`,'Free cash flow','Reserve floor (Settings)'],
+        firstAction: reserveProtected? `Increase ${hi.name} autopay by ${fmtMoney(extra)}.` : 'Restore minimum reserve first.', reviewDate, provisional
+      }));
+    }
+
+    /* ---- 4. Budget variance (behavioral vs structural) ---- */
+    const months=Object.keys(db.actuals).sort();
+    const overStreak=this.consecutiveOver(db);
+    if(overStreak.count>=1){
+      const cat=overStreak.cat;
+      const kind = overStreak.count>=3? 'persistent (structural or unrealistic budget)' : 'recent';
+      list.push(this.mk({
+        key:'variance-'+ (cat?cat.id:'gen'), area:'Budget variance', rankTier:7,
+        action: cat? `Resolve ${overStreak.count}-period overspend in ${cat.name}` : 'Resolve repeated budget overspend',
+        why:`Actual exceeded budget for ${overStreak.count} period(s) — ${kind}.`,
+        current: cat? `${cat.name}: budget ${fmtMoney(cat.budgeted)}, latest actual ${fmtMoney(overStreak.actual)} (+${fmtPct(overStreak.pct)}).` : 'Multiple categories over budget.',
+        proposed: overStreak.count>=3? `Rebase the budget to ${fmtMoney(overStreak.actual)} if the spend is legitimate, or set a hard cap.` : `Cap next period at budget; review drivers.`,
+        monthly: cat? Math.max(0,overStreak.actual-cat.budgeted):0, annual: cat? Math.max(0,overStreak.actual-cat.budgeted)*12:0,
+        goalEffect:'Overspend diverts money from goals.', debtEffect:'Reduces payoff capacity.',
+        mortgageEffect:'Distorts sustainable-affordability estimate.',
+        risk:'Rebasing upward reduces surplus; a hard cap requires behavior change.',
+        dims:{impact:55,urgency:overStreak.count>=3?70:45,risk:50,feasibility:70,confidence:conf},
+        calc: cat?[`variance = actual − budget = ${fmtMoney(overStreak.actual)} − ${fmtMoney(cat.budgeted)} = ${fmtMoney(overStreak.actual-cat.budgeted)} (${fmtPct(overStreak.pct)})`]:[],
+        dataUsed:['Budget vs actual history'], firstAction:'Classify the overspend: one-time, seasonal, structural, or behavioral.', reviewDate, provisional
+      }));
+    }
+
+    /* ---- 7. Goal funding ---- */
+    db.goals.forEach(g=>{
+      const gc=Calc.goalCompute(db,g);
+      const ratio = gc.required_monthly>0? gc.current_contribution/gc.required_monthly : 1;
+      if(ratio<1 && fcf>=0){
+        const cls = ratio>=0.8?'Slight adjustment required':ratio>=0.5?'At risk':'Off track';
+        // 4 alternatives
+        const need=g.target-g.current-gc.expected_growth;
+        const altExtend=need/(gc.months+6);
+        const altReduce=(gc.current_contribution*gc.months)+g.current+gc.expected_growth;
+        list.push(this.mk({
+          key:'goal-'+g.id, area:'Goal funding', rankTier:7,
+          action:`Close the funding gap on “${g.name}”`,
+          why:`Funding ratio ${(ratio*100).toFixed(0)}% (${cls}).`,
+          current:`Contributing ${fmtMoney(gc.current_contribution)}/mo vs required ${fmtMoney(gc.required_monthly)}.`,
+          proposed:`Four options below — none divert essentials, minimum debt, or protected reserves.`,
+          monthly:gc.gap, annual:gc.gap*12,
+          goalEffect:`On-time completion needs +${fmtMoney(gc.gap)}/mo.`,
+          debtEffect:'Neutral.', mortgageEffect: /down/i.test(g.name)?'Directly affects down-payment readiness.':'Neutral.',
+          risk:'Increasing contribution reduces other slack.',
+          dims:{impact:50,urgency: this.monthsTo(g.target_date)<=12?70:45,risk:40,feasibility:fcf>=gc.gap?75:45,confidence:conf},
+          calc:[
+            `required_monthly = (target − current − expected_growth) / months`,
+            `= (${fmtMoney(g.target)} − ${fmtMoney(g.current)} − ${fmtMoney(gc.expected_growth)}) / ${gc.months} = ${fmtMoney(gc.required_monthly)}`,
+            `goal_funding_ratio = current_contribution / required = ${fmtMoney(gc.current_contribution)} / ${fmtMoney(gc.required_monthly)} = ${(ratio*100).toFixed(0)}%`,
+            `Alt 1 increase: +${fmtMoney(gc.gap)}/mo`,
+            `Alt 2 extend +6mo: required → ${fmtMoney(altExtend)}/mo`,
+            `Alt 3 reduce target: reachable ≈ ${fmtMoney(altReduce)} at current pace`,
+            `Alt 4 blended: e.g. +${fmtMoney(gc.gap/2)}/mo and +3mo deadline`
+          ],
+          dataUsed:[`Goal: ${g.name}`,'Contribution budget line'],
+          firstAction:'Choose one of the four alternatives in the What-if panel.', reviewDate, provisional
+        }));
+      }
+    });
+
+    /* ---- 6. Mortgage readiness ---- */
+    const m=Calc.mortgage(db);
+    const backMax=a.back_end_max*100;
+    if(m.back>backMax || m.reserves_after<m.emergency_required){
+      const improvements=this.mortgageImprovements(db,m);
+      const top=improvements[0];
+      list.push(this.mk({
+        key:'mortgage-readiness', area:'Mortgage readiness', rankTier:8,
+        action:'Improve mortgage readiness before purchase',
+        why: m.back>backMax? `Back-end DTI ${fmtPct(m.back)} exceeds the ${backMax}% guide.` : `Post-closing reserves ${fmtMoney(m.reserves_after)} fall short of the ${fmtMoney(m.emergency_required)} requirement.`,
+        current:`Front-end ${fmtPct(m.front)}, back-end ${fmtPct(m.back)}, reserves after closing ${fmtMoney(m.reserves_after)}.`,
+        proposed:`Highest-impact: ${top.text}`,
+        monthly: top.monthly||0, annual:(top.monthly||0)*12,
+        goalEffect:'May compete with the down-payment goal.', debtEffect: top.debtEffect||'Varies by action.',
+        mortgageEffect: top.mortgageEffect,
+        risk:'The largest qualification gain may deplete reserves — not automatically best.',
+        dims:{impact:65,urgency: this.monthsTo(addMonths(a.purchase_within_months))<=12?75:45,risk:60,feasibility:60,confidence:conf},
+        calc:[
+          `back_end_DTI = (housing + existing_debt) / gross = (${fmtMoney(m.housing_payment)} + ${fmtMoney(m.existing_debt)}) / ${fmtMoney(m.gross)} = ${fmtPct(m.back)}`,
+          `post_closing_reserves = liquid − down − closing = ${fmtMoney(m.reserves_after)}`
+        ].concat(improvements.slice(0,5).map((x,i)=>`#${i+1} ${x.text}`)),
+        dataUsed:['Mortgage inputs','Debts','Accounts'],
+        firstAction: top.first||'Review the five ranked improvements in Mortgage Readiness.', reviewDate, provisional
+      }));
+    }
+
+    /* ---- 8. Recurring expenses ---- */
+    const recurTx=db.transactions.filter(t=>t.flags&&t.flags.includes('recurring'));
+    if(recurTx.length){
+      const monthlyRecur=recurTx.reduce((s,t)=>s+t.amount,0);
+      list.push(this.mk({
+        key:'recurring', area:'Recurring expenses', rankTier:10,
+        action:'Audit recurring subscriptions',
+        why:`${recurTx.length} recurring charge(s) detected totalling ${fmtMoney(monthlyRecur)}/mo.`,
+        current:recurTx.map(t=>t.description+' '+fmtMoney(t.amount)).join(', ')+'.',
+        proposed:`Cancel or downgrade unused services; even one at ${fmtMoney(monthlyRecur)}/mo = ${fmtMoney(monthlyRecur*12)}/yr.`,
+        monthly:monthlyRecur, annual:monthlyRecur*12,
+        goalEffect:'Recovered cash can fund goals.', debtEffect:'Or accelerate debt.', mortgageEffect:'Improves cash-flow buffer.',
+        risk:'Loss of service utility.',
+        dims:{impact:40,urgency:35,risk:30,feasibility:90,confidence:Math.min(conf,70)},
+        calc:[`annualized = monthly_recurring × 12 = ${fmtMoney(monthlyRecur)} × 12 = ${fmtMoney(monthlyRecur*12)}`],
+        dataUsed:['Flagged recurring transactions'], firstAction:'Review the recurring list and cancel one unused service.', reviewDate,
+        provisional: provisional||true  // flagged tx are unverified estimates
+      }));
+    }
+
+    /* ---- 10. Data quality ---- */
+    if(!dq.sufficientForMajor){
+      list.push(this.mk({
+        key:'data-quality', area:'Financial-data quality', rankTier:1,
+        action:'Verify source data before major decisions',
+        why:`Data-quality score ${dq.score.toFixed(0)} is below 60 — insufficient for mortgage, consolidation, or long-term forecasts.`,
+        current:`Completeness ${dq.completeness.toFixed(0)}, verification ${dq.verification.toFixed(0)}, recency ${dq.recency.toFixed(0)}, reconciliation ${dq.reconciliation.toFixed(0)}.`,
+        proposed:'Resolve the listed gaps, then re-run the review.',
+        monthly:0, annual:0, goalEffect:'—', debtEffect:'—', mortgageEffect:'Definitive mortgage advice withheld until ≥60.',
+        risk:'Acting on low-quality data can mislead.',
+        dims:{impact:60,urgency:80,risk:85,feasibility:85,confidence:100},
+        calc:[`data_quality = completeness×0.35 + verification×0.30 + recency×0.20 + reconciliation×0.15 = ${dq.score.toFixed(0)}`].concat(dq.gaps.map(g=>'• '+g)),
+        dataUsed:['All record metadata'], firstAction: dq.gaps[0]||'Approve pending records.', reviewDate, provisional:false
+      }));
+    }
+
+    // Rank: primary tier first, then score desc; cap at 5 primary
+    list.sort((x,y)=> (x.rankTier-y.rankTier) || (y.score-x.score));
+    const primary=list.slice(0,5);
+    return {generated_at:nowISO(), dq, metrics:{ni,ess,disc,minDebt,savings,fcf,ecr,liquid,em,band,targetM}, primary, all:list};
+  },
+
+  mk(o){
+    o.score=score(o.dims.impact,o.dims.urgency,o.dims.risk,o.dims.feasibility,o.dims.confidence);
+    o.class=classify(o.score);
+    o.confidenceLabel = o.dims.confidence>=60? (o.dims.confidence>=80?'High':'Moderate') : 'Low';
+    if(o.provisional || o.dims.confidence<60){ o.provisional=true; }
+    return o;
+  },
+
+  /* amortization payoff: returns {months, interest} */
+  payoff(balance, apr, payment){
+    const r=apr/100/12; let bal=balance, interest=0, months=0;
+    if(payment<=bal*r) return {months:Infinity, interest:Infinity}; // never pays off
+    while(bal>0 && months<600){ const i=bal*r; interest+=i; bal=bal+i-payment; months++; }
+    return {months, interest:Math.max(0,interest)};
+  },
+  monthsTo(iso){ return Calc.monthsBetween(nowISO(), iso); },
+
+  consecutiveOver(db){
+    const months=Object.keys(db.actuals).sort();
+    let best={count:0,cat:null,actual:0,pct:0};
+    Calc.byType(db,'variable').concat(Calc.byType(db,'fixed')).forEach(c=>{
+      let streak=0, lastActual=0, lastPct=0;
+      months.forEach(ym=>{ const act=+(db.actuals[ym]||{})[c.id]||0; if(act>c.budgeted){ streak++; lastActual=act; lastPct=(act-c.budgeted)/c.budgeted*100; } else streak=0; });
+      if(streak>best.count) best={count:streak,cat:c,actual:lastActual,pct:lastPct};
+    });
+    return best;
+  },
+
+  mortgageImprovements(db,m){
+    const out=[];
+    // pay off a specific debt (largest payment)
+    const debts=Calc.byType(db,'debt').slice().sort((a,b)=>(+b.budgeted)-(+a.budgeted));
+    if(debts[0]){ const d=debts[0]; const newBack=(m.housing_payment + Math.max(0,m.existing_debt-(+d.budgeted)))/m.gross*100;
+      out.push({text:`Pay off ${d.name}: releases ${fmtMoney(d.budgeted)}/mo, back-end ${fmtPct(m.back)} → ${fmtPct(newBack)} (consumes ${fmtMoney(d.balance)} cash).`, monthly:0, mortgageEffect:`Back-end → ${fmtPct(newBack)}`, debtEffect:`−${fmtMoney(d.balance)} balance`, first:`Model the ${d.name} payoff in Scenario Lab.`, gain:m.back-newBack}); }
+    // increase down payment to 20%
+    const need20=m.price*0.2; if(m.dp<need20){ const add=need20-m.dp; const r=Calc.mortgage(db,{down_payment:need20}); out.push({text:`Raise down payment to 20% (+${fmtMoney(add)}): removes PMI ${fmtMoney(m.pmi)}/mo, housing → ${fmtMoney(r.housing_payment)}.`, monthly:0, mortgageEffect:`Housing → ${fmtMoney(r.housing_payment)}`, first:'Increase down-payment fund contributions.', gain:(m.housing_payment-r.housing_payment)}); }
+    // reduce home price 10%
+    const r10=Calc.mortgage(db,{home_price:m.price*0.9}); out.push({text:`Reduce target price 10% (${fmtMoney(m.price*0.9)}): back-end → ${fmtPct(r10.back)}, housing → ${fmtMoney(r10.housing_payment)}.`, monthly:0, mortgageEffect:`Back-end → ${fmtPct(r10.back)}`, first:'Adjust target price in Mortgage Readiness.', gain:m.back-r10.back});
+    // increase income
+    const rInc=(m.housing_payment+m.existing_debt)/(m.gross+500)*100; out.push({text:`Increase verified gross income +$500: back-end → ${fmtPct(rInc)}.`, monthly:0, mortgageEffect:`Back-end → ${fmtPct(rInc)}`, first:'Document additional income.', gain:m.back-rInc});
+    // extend timeline / preserve reserves
+    out.push({text:`Extend timeline to save more: each ${fmtMoney(500)}/mo for 12 mo adds ${fmtMoney(6000)} reserves/down payment.`, monthly:500, mortgageEffect:'Higher post-closing reserves', first:'Push purchase date out in Settings.', gain:0.1});
+    return out.sort((a,b)=>(b.gain||0)-(a.gain||0));
+  },
+
+  /* ---- Conditional rules (returns list of {level,text}) ---- */
+  conditions(db,r){
+    const a=db.settings.assumptions, out=[], mx=r.metrics;
+    if(mx.fcf<0) out.push({level:'red',text:'Projected cash flow < 0 → cash-flow stabilization prioritized above all optional actions.'});
+    if(mx.em<a.reserve_target_months) out.push({level:'amber',text:`Emergency reserves (${mx.em.toFixed(1)} mo) below target (${a.reserve_target_months}) → recommendations that consume liquid savings are restricted.`});
+    const hiapr=Calc.byType(db,'debt').find(c=>(+c.apr)>a.credit_apr_threshold);
+    if(hiapr && mx.liquid>=a.min_cash_reserve && mx.em>=1) out.push({level:'blue',text:`${hiapr.name} APR ${(+hiapr.apr).toFixed(1)}% > threshold ${a.credit_apr_threshold}% and reserves protected → accelerated payoff evaluated.`});
+    const streak=this.consecutiveOver(db); if(streak.count>=3) out.push({level:'amber',text:`${streak.cat.name} over budget ${streak.count} periods → classify as behavioral, structural, seasonal, or unrealistic budget.`});
+    if(this.monthsTo(addMonths(a.purchase_within_months))<=12) out.push({level:'blue',text:'Mortgage purchase within 12 months → liquidity, DTI, payment history, and closing reserves prioritized.'});
+    if(a.variable_income) out.push({level:'amber',text:'Variable income flagged → conservative income and expense assumptions applied.'});
+    const unrec=db.reconcile.filter(x=>x.decision==='pending'); if(unrec.length) out.push({level:'amber',text:`${unrec.length} account item(s) not reconciled → recommendations relying materially on them are suppressed.`});
+    const lowOCR=db.documents.some(d=>d.fields.some(f=>f.confidence<0.7 && !f.verified)); if(lowOCR) out.push({level:'red',text:'OCR confidence below threshold on unverified fields → manual validation required before use.'});
+    // promo APR expiry — synthetic none, keep rule visible
+    // goal conflict: two High goals both underfunded
+    const highUnder=db.goals.filter(g=>{const gc=Calc.goalCompute(db,g);return g.priority==='High'&&gc.gap>0;});
+    if(highUnder.length>=2 && mx.fcf < highUnder.reduce((s,g)=>s+Calc.goalCompute(db,g).gap,0)) out.push({level:'amber',text:`Goals conflict: ${highUnder.map(g=>g.name).join(' & ')} both underfunded and cash flow can't cover both → a priority decision is requested.`});
+    return out;
+  },
+
+  /* ---- Plan bundles ---- */
+  bundles(db,r){
+    const mx=r.metrics; const surplus=Math.max(0,mx.fcf);
+    const debts=Calc.byType(db,'debt').slice().sort((x,y)=>(+y.apr)-(+x.apr));
+    const topDebt=debts[0];
+    const efGap=Math.max(0, mx.ess*mx.targetM - mx.liquid);
+    const goalGap=db.goals.reduce((s,g)=>s+Math.max(0,Calc.goalCompute(db,g).gap),0);
+    const mk=(name,alloc,risks,behavior,note)=>({name,alloc,risks,behavior,note,
+      weekly:alloc.reduce((s,x)=>s+x.amt,0)*12/52, monthly:alloc.reduce((s,x)=>s+x.amt,0)});
+    const stability=mk('Stability',
+      [{k:'Essentials + minimums (protected)',amt:0},{k:'Emergency fund',amt:Math.min(surplus,efGap/mx.targetM||surplus)},{k:'Hold discretionary flat',amt:0}],
+      'Slowest debt/goal progress.', 'Freeze discretionary increases; automate reserve transfer.',
+      'Prioritizes positive cash flow, minimum payments, and reserves before anything optional.');
+    const balAlloc=[]; let rem=surplus;
+    const efPart=Math.min(rem, (efGap/mx.targetM)||0); balAlloc.push({k:'Emergency fund',amt:efPart}); rem-=efPart;
+    const debtPart=Math.min(rem, topDebt?rem*0.6:0); if(topDebt) balAlloc.push({k:'Extra to '+topDebt.name,amt:debtPart}); rem-=debtPart;
+    balAlloc.push({k:'Goals',amt:Math.max(0,rem)});
+    const balanced=mk('Balanced', balAlloc, 'Moderate progress on all fronts.', 'Maintain current lifestyle; small discretionary trims.',
+      'Splits surplus across reserves, debt reduction, and goal funding.');
+    const accAlloc=[]; let rem2=surplus + mx.disc*0.3; // pull 30% discretionary
+    const efA=Math.min(rem2,(efGap/Math.max(1,mx.targetM))||0); accAlloc.push({k:'Emergency (fast)',amt:efA}); rem2-=efA;
+    if(topDebt){ const dA=Math.min(rem2, rem2*0.8); accAlloc.push({k:'Aggressive '+topDebt.name,amt:dA}); rem2-=dA; }
+    accAlloc.push({k:'Goals (stretch)',amt:Math.max(0,rem2)});
+    const accelerated=mk('Accelerated', accAlloc, 'High execution pressure; thin lifestyle slack.', 'Cut ~30% discretionary; strict tracking.',
+      'Maximizes payoff/goal speed by reducing discretionary spending.');
+    return {stability,balanced,accelerated};
+  }
+};
+
+</script>
+<script>
+/* ===== reco_ui.js (inlined) ===== */
+/* ============================================================
+   RECOMMENDATION CENTER — view + interactions (extension)
+   Appended after reco.js. Registers Views.recommendations and
+   Views._after_recommendations without altering existing views.
+   ============================================================ */
+'use strict';
+
+/* live result cache for the current session view */
+App.recoResult = null;
+App.recoView = 'cards';   // cards | report | plans | history
+
+Views.recommendations = function(){
+  const db=Store.db;
+  const dq=DataQuality.score(db);
+  const dqBadge = dq.score>=90?'green':dq.score>=75?'blue':dq.score>=60?'amber':'red';
+  const r=App.recoResult;
+  const tabs=(id,lbl)=>`<button class="${App.recoView===id?'active':''}" onclick="App.recoView='${id}';App.render()">${lbl}</button>`;
+  return `
+  ${syntheticNote}
+  <div class="banner info"><span class="b-badge" style="background:#0d2440;color:var(--accent);border-color:var(--accent2)">Advisory</span>
+    Recommendations are quantitative planning guidance from your stored data — not guaranteed lending, tax, legal, or investment advice. Nothing here changes a verified record or the baseline until you approve it.</div>
+
+  <div class="section">
+    <div class="section-head">
+      <div><h3>Recommendation Center</h3><div class="desc">Prioritized action plan regenerated on each financial review</div></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <span class="badge ${dqBadge}" title="Data-quality gate">Data quality ${dq.score.toFixed(0)} \u00b7 ${dq.band}</span>
+        <button class="btn" onclick="RecoUI.run()">Run Financial Review</button>
+      </div>
+    </div>
+    <div class="stat-inline" style="margin-top:6px">
+      <div class="si"><div class="n">${fmtMoney(Calc.monthlySurplus(db))}</div><div class="l">Free cash flow</div></div>
+      <div class="si"><div class="n">${RecoData.essentialExpenses(db)?(RecoData.liquidEmergency(db)/RecoData.essentialExpenses(db)).toFixed(1):'0'}</div><div class="l">Emergency months (essentials)</div></div>
+      <div class="si"><div class="n">${fmtPct(Calc.dti(db))}</div><div class="l">Debt-to-income</div></div>
+      <div class="si"><div class="n">${db.reco_runs.length}</div><div class="l">Saved runs</div></div>
+    </div>
+  </div>
+
+  ${!r ? `<div class="section"><div class="empty">No review yet this session. Click <strong>Run Financial Review</strong> to generate a prioritized action plan from your current data.${db.reco_runs.length?' Your last saved run is available under History.':''}</div>
+    <div class="pill-tabs" style="margin-top:8px">${tabs('history','History')}</div>
+    ${App.recoView==='history'?RecoUI.historyHtml():''}</div>`
+  : `
+  <div class="pill-tabs" style="margin-bottom:14px">
+    ${tabs('cards','Action cards')} ${tabs('report','Budget-run report')} ${tabs('plans','Plan bundles')} ${tabs('history','History')}
+  </div>
+  ${App.recoView==='cards'?RecoUI.cardsHtml(r):''}
+  ${App.recoView==='report'?RecoUI.reportHtml(r):''}
+  ${App.recoView==='plans'?RecoUI.plansHtml(r):''}
+  ${App.recoView==='history'?RecoUI.historyHtml():''}
+  `}`;
+};
+Views._after_recommendations=function(){ /* charts if any later */ };
+
+const RecoUI = {
+  run(){
+    const db=Store.db;
+    const r=Reco.build(db);
+    App.recoResult=r; App.recoView='cards';
+    // persist a versioned run
+    const prev=db.reco_runs[db.reco_runs.length-1]||null;
+    const runRec={ id:uid('run'), at:nowISO(), user_id:USER_ID,
+      metrics:r.metrics, dq:{score:r.dq.score,band:r.dq.band},
+      recos:r.primary.map(x=>({key:x.key,action:x.action,score:x.score,class:x.class,monthly:x.monthly,annual:x.annual,provisional:x.provisional})),
+      conditions:Reco.conditions(db,r).length };
+    db.reco_runs.push(runRec);
+    if(db.reco_runs.length>60) db.reco_runs.shift();
+    Store.log('review','Ran financial review — '+r.primary.length+' recommendations, DQ '+r.dq.score.toFixed(0));
+    Store.save();
+    App._prevRun=prev;
+    toast('Financial review complete','green'); App.render();
+  },
+
+  statusOf(key){ return (Store.db.reco_status[key]||{}).status||'new'; },
+  setStatus(key,status,reason){
+    Store.db.reco_status[key]={status,reason:reason||null,at:nowISO()};
+    Store.log('recommendation', key+' → '+status+(reason?(' ('+reason+')'):''));
+    Store.save(); App.render();
+  },
+  act(key,status){
+    if(status==='dismissed'){ const reason=prompt('Reason for dismissing this recommendation (recorded in audit):',''); if(reason===null) return; this.setStatus(key,'dismissed',reason); toast('Recommendation dismissed','amber'); return; }
+    this.setStatus(key,status); toast('Marked '+status,'green');
+  },
+
+  cardsHtml(r){
+    if(!r.primary.length) return '<div class="section"><div class="empty">No action needed — cash flow, reserves, debt, goals, and mortgage readiness are within thresholds on current data.</div></div>';
+    const cond=Reco.conditions(Store.db,r);
+    const condHtml = cond.length? `<div class="section"><h3>Conditions requiring attention</h3><div class="desc">Rule-based gates applied to this run</div>${cond.map(c=>`<div class="kv"><span class="k">${badge(c.level)} ${c.text}</span><span class="v"></span></div>`).join('')}</div>`:'';
+    const cards=r.primary.map((x,i)=>this.card(x,i+1)).join('');
+    const awaiting=r.dq.gaps.length? `<div class="section"><h3>Items awaiting verification</h3>${r.dq.gaps.map(g=>`<div class="kv"><span class="k">${badge('amber')} ${g}</span><span class="v"></span></div>`).join('')}</div>`:'';
+    return condHtml+cards+awaiting;
+  },
+
+  card(x,rank){
+    const st=this.statusOf(x.key);
+    const stBadge={new:'gray',accepted:'green',deferred:'amber',dismissed:'red',completed:'blue'}[st]||'gray';
+    const eff=(lbl,v)=>`<div class="kv"><span class="k">${lbl}</span><span class="v">${v}</span></div>`;
+    const money=(n)=> n===0?'\u2014':(n>0?'+':'')+fmtMoney2(Math.abs(n)*(n<0?-1:1)).replace('$-','-$');
+    return `<div class="section" style="border-left:3px solid var(--${classBadge(x.score)}-bd,var(--border))">
+      <div class="section-head">
+        <div>
+          <h3>#${rank} \u00b7 ${x.action} ${badge(classBadge(x.score),x.class)} ${x.provisional?badge('amber','Provisional \u2014 verify source data'):''}</h3>
+          <div class="desc">${x.area} \u00b7 score ${x.score}/100 \u00b7 confidence ${x.confidenceLabel} (${x.dims.confidence}) \u00b7 status ${badge(stBadge,st)}</div>
+        </div>
+        <div style="text-align:right;min-width:120px">
+          <div class="mini">Priority score</div>
+          <div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--${classBadge(x.score)},var(--text))">${x.score}</div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div>
+          ${eff('Why it matters',x.why)}
+          ${eff('Current state',x.current)}
+          ${eff('Proposed adjustment',x.proposed)}
+          ${eff('Next step',x.firstAction)}
+          ${eff('Review date',fmtDate(x.reviewDate))}
+        </div>
+        <div>
+          ${eff('Monthly effect',money(x.monthly))}
+          ${eff('Annual effect',money(x.annual))}
+          ${eff('Goal effect',x.goalEffect)}
+          ${eff('Debt / interest effect',x.debtEffect)}
+          ${eff('Mortgage-readiness effect',x.mortgageEffect)}
+          ${eff('Risk / tradeoff',x.risk)}
+          ${eff('Data used',x.dataUsed.join(', '))}
+        </div>
+      </div>
+      <div class="btnrow" style="margin-top:12px">
+        <button class="btn ghost sm" onclick="RecoUI.why('${x.key}')">Why this recommendation?</button>
+        <button class="btn ghost sm" onclick="RecoUI.whatIf('${x.key}')">What if I accept this?</button>
+        <button class="btn ghost sm" onclick="App.go('scenario')">Compare with baseline</button>
+        <span style="flex:1"></span>
+        <button class="btn sm" onclick="RecoUI.act('${x.key}','accepted')">Accept</button>
+        <button class="btn sec sm" onclick="RecoUI.act('${x.key}','deferred')">Defer</button>
+        <button class="btn sec sm" onclick="RecoUI.act('${x.key}','completed')">Complete</button>
+        <button class="btn danger sm" onclick="RecoUI.act('${x.key}','dismissed')">Dismiss</button>
+      </div>
+    </div>`;
+  },
+
+  why(key){
+    const r=App.recoResult; const x=r.all.find(z=>z.key===key); if(!x) return;
+    const a=Store.db.settings.assumptions;
+    const body=`
+      <div class="mini" style="margin-bottom:6px">FORMULA & INPUTS</div>
+      <div class="calc" style="font-family:var(--mono);font-size:11.5px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px;white-space:pre-wrap;color:var(--text2)">${x.calc.join('\n')}</div>
+      <div class="kv"><span class="k">Data sources</span><span class="v">${x.dataUsed.join(', ')}</span></div>
+      <div class="kv"><span class="k">Key assumptions</span><span class="v">return ${(a.default_return*100).toFixed(1)}%, inflation ${(a.inflation*100).toFixed(1)}%, reserve target ${a.reserve_target_months} mo${a.tax_rate!=null?(', tax '+(a.tax_rate*100).toFixed(0)+'%'):', tax rate: not assumed'}</span></div>
+      <div class="kv"><span class="k">Most sensitive assumption</span><span class="v">${this.sensitiveNote(x)}</span></div>
+      <div class="kv"><span class="k">Confidence limitation</span><span class="v">${x.provisional?'Below 60 — provisional; verify source data before acting definitively.':'Confidence '+x.dims.confidence+' — acceptable for planning.'}</span></div>
+      <div class="kv"><span class="k">What would invalidate this</span><span class="v">${this.invalidator(x)}</span></div>
+      <div class="kv"><span class="k">If you do nothing</span><span class="v">${this.doNothing(x)}</span></div>`;
+    modal('Why this recommendation? \u2014 '+x.action, body, null, []);
+  },
+  sensitiveNote(x){
+    if(/debt/i.test(x.area)) return 'APR and extra-payment amount drive interest saved.';
+    if(/emergency/i.test(x.area)) return 'Reserve-target months changes the required contribution proportionally.';
+    if(/mortgage/i.test(x.area)) return 'Interest rate and existing debt move DTI the most.';
+    if(/goal/i.test(x.area)) return 'Target date and expected return dominate the required monthly figure.';
+    if(/cash/i.test(x.area)) return 'The tax rate (if used) changes the gross-income requirement.';
+    return 'Income and essential-expense estimates.';
+  },
+  invalidator(x){
+    if(/debt/i.test(x.area)) return 'A lower verified APR, a prepayment penalty, or reserves dropping below the floor.';
+    if(/mortgage/i.test(x.area)) return 'Updated rate quote, changed home price, or verified income change.';
+    if(/goal/i.test(x.area)) return 'A change to target amount, date, or contribution capacity.';
+    if(/cash/i.test(x.area)) return 'Corrected income or a reclassified one-time expense.';
+    return 'Any correction to the underlying records or assumptions.';
+  },
+  doNothing(x){
+    if(/cash/i.test(x.area)) return 'The monthly deficit continues to erode reserves.';
+    if(/emergency/i.test(x.area)) return 'You remain exposed to a shock with limited buffer.';
+    if(/debt/i.test(x.area)) return 'Interest keeps accruing at the current APR.';
+    if(/mortgage/i.test(x.area)) return 'Qualification and post-closing safety stay below guides.';
+    if(/goal/i.test(x.area)) return 'The goal misses its target date at the current pace.';
+    return 'The condition persists into the next review.';
+  },
+
+  whatIf(key){
+    const db=Store.db, r=App.recoResult; const x=r.all.find(z=>z.key===key); if(!x) return;
+    const base=Calc.baseline(db);
+    // Approximate accepted-state deltas (does NOT mutate baseline)
+    let deltaCash=0, note='';
+    if(/cash|essential/i.test(x.area)){ deltaCash=Math.abs(x.monthly); note='Applying the adjustment restores/adds this to monthly cash flow.'; }
+    else if(/debt/i.test(x.area)){ deltaCash=x.monthly; note='Extra payment reduces monthly free cash now, but releases the payment and saves interest after payoff.'; }
+    else if(/emergency|goal|recurring/i.test(x.area)){ deltaCash=/recurring/i.test(x.area)?Math.abs(x.monthly):-Math.abs(x.monthly); note=/recurring/i.test(x.area)?'Cancelling frees this monthly.':'Directing this to the target reduces free cash now.'; }
+    const projected=base.surplus+deltaCash;
+    const body=`
+      <div class="kv"><span class="k">Recommendation</span><span class="v">${x.action}</span></div>
+      <div class="kv"><span class="k">Baseline free cash flow</span><span class="v">${fmtMoney(base.surplus)}/mo</span></div>
+      <div class="kv"><span class="k">Estimated after accepting</span><span class="v" style="color:${projected>=base.surplus?'var(--green)':'var(--amber)'}">${fmtMoney(projected)}/mo</span></div>
+      <div class="kv"><span class="k">Annualized effect</span><span class="v">${fmtMoney(Math.abs(x.annual))}/yr</span></div>
+      <div class="mini" style="margin-top:8px">${note} This is a projection only; the immutable baseline is unchanged. Use Scenario Lab to model it in full, then approve there if you want to adopt it.</div>`;
+    modal('What if I accept this? \u2014 '+x.action, body, ()=>{ App.go('scenario'); }, [{label:'Open in Scenario Lab',cls:'sec',fn:()=>{closeModal();App.go('scenario');}}]);
+  },
+
+  reportHtml(r){
+    const db=Store.db, mx=r.metrics; const prev=App._prevRun;
+    const cmp=(cur,prevVal,fmt,better)=>{ if(prevVal===undefined||prevVal===null) return '<span class="mini">no prior</span>'; const d=cur-prevVal; const good=better==='up'?d>=0:d<=0; return `<span style="color:${d===0?'var(--muted)':good?'var(--green)':'var(--red)'}">${d>0?'+':''}${fmt(d)}</span>`; };
+    const rows=this.trendRows(db);
+    return `
+    <div class="section"><h3>1 \u00b7 Executive summary</h3>
+      <p style="font-size:13px;color:var(--text2)">This run produced <strong>${r.primary.length}</strong> ranked recommendation(s). Free cash flow is <strong>${fmtMoney(mx.fcf)}/mo</strong>, essential coverage <strong>${mx.ecr.toFixed(2)}</strong>, emergency reserves <strong>${mx.em.toFixed(1)} months</strong> (${mx.band}), and data quality <strong>${r.dq.score.toFixed(0)} (${r.dq.band})</strong>. ${mx.fcf<0?'Cash-flow stabilization is the top priority.':r.dq.score<60?'Definitive major-decision advice is withheld until data quality reaches 60.':'Position is stable enough to pursue prioritized improvements.'}</p>
+    </div>
+    <div class="section"><h3>2 \u00b7 Changes since previous run</h3>
+      ${prev? `<div class="kv"><span class="k">Free cash flow</span><span class="v">${fmtMoney(mx.fcf)} &nbsp; ${cmp(mx.fcf,prev.metrics.fcf,fmtMoney,'up')}</span></div>
+      <div class="kv"><span class="k">Emergency months</span><span class="v">${mx.em.toFixed(1)} &nbsp; ${cmp(mx.em,prev.metrics.em,(v)=>v.toFixed(1),'up')}</span></div>
+      <div class="kv"><span class="k">Data quality</span><span class="v">${r.dq.score.toFixed(0)} &nbsp; ${cmp(r.dq.score,prev.dq.score,(v)=>v.toFixed(0),'up')}</span></div>`
+      : '<div class="empty">No previous run this session to compare against.</div>'}
+    </div>
+    <div class="section"><h3>3 \u00b7 Budget vs actual variance</h3>
+      <div class="desc">Current month top movements (see Transactions for the full table)</div>
+      ${Calc.topUnfavorable(db,App.varMonth,3).map(v=>`<div class="kv"><span class="k">${v.category} ${badge(v.status)}</span><span class="v">+${fmtMoney(v.variance_amount)} (${fmtPct(v.variance_percentage)})</span></div>`).join('')||'<div class="mini">No unfavorable variance.</div>'}
+    </div>
+    <div class="section"><h3>4\u20138 \u00b7 Updated trajectories</h3>
+      <div class="tbl-wrap"><table><thead><tr><th>Metric</th><th class="num">Now</th><th class="num">Prev month</th><th class="num">3-mo avg</th><th class="num">6-mo avg</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="mini" style="margin-top:8px">A single one-time expense is not treated as a trend unless it persists across periods.</div>
+    </div>
+    <div class="section"><h3>9 \u00b7 Top five ranked recommendations</h3>
+      ${r.primary.map((x,i)=>`<div class="kv"><span class="k">#${i+1} ${badge(classBadge(x.score),x.score+'')} ${x.action}${x.provisional?' '+badge('amber','provisional'):''}</span><span class="v">${x.monthly?((x.monthly>0?'+':'')+fmtMoney(x.monthly)+'/mo'):''}</span></div>`).join('')}
+    </div>
+    <div class="section"><h3>10 \u00b7 Conditions requiring attention</h3>
+      ${Reco.conditions(db,r).map(c=>`<div class="kv"><span class="k">${badge(c.level)} ${c.text}</span><span class="v"></span></div>`).join('')||'<div class="mini">None.</div>'}
+    </div>
+    <div class="section"><h3>11 \u00b7 Items awaiting verification</h3>
+      ${r.dq.gaps.map(g=>`<div class="kv"><span class="k">${badge('amber')} ${g}</span><span class="v"></span></div>`).join('')||'<div class="mini">None.</div>'}
+    </div>
+    <div class="section"><h3>12 \u00b7 Recommended actions before next run</h3>
+      ${r.primary.slice(0,3).map(x=>`<div class="kv"><span class="k">${x.firstAction}</span><span class="v">by ${fmtDate(x.reviewDate)}</span></div>`).join('')}
+    </div>`;
+  },
+  trendRows(db){
+    const months=Object.keys(db.actuals).sort();
+    const cm=months[months.length-1], pm=months[months.length-2];
+    const spendCats=Calc.byType(db,'fixed').concat(Calc.byType(db,'variable'));
+    const spendFor=(ym)=>spendCats.reduce((s,c)=>s+(+(db.actuals[ym]||{})[c.id]||0),0);
+    const avg=(n)=>{ const sel=months.slice(-n); return sel.length? sel.reduce((s,m)=>s+spendFor(m),0)/sel.length : 0; };
+    const row=(lbl,now,prev,a3,a6,fmt)=>`<tr><td>${lbl}</td><td class="num">${fmt(now)}</td><td class="num">${prev!=null?fmt(prev):'\u2014'}</td><td class="num">${fmt(a3)}</td><td class="num">${fmt(a6)}</td></tr>`;
+    return [
+      row('Actual spend',spendFor(cm), pm?spendFor(pm):null, avg(3), avg(6), fmtMoney),
+      row('Free cash flow',Calc.monthlySurplus(db), null, Calc.monthlySurplus(db), Calc.monthlySurplus(db), fmtMoney),
+      row('Emergency months', RecoData.essentialExpenses(db)?RecoData.liquidEmergency(db)/RecoData.essentialExpenses(db):0, null, 0,0,(v)=>v.toFixed(1)),
+      row('Debt-to-income', Calc.dti(db), null, Calc.dti(db), Calc.dti(db), (v)=>fmtPct(v))
+    ].join('');
+  },
+
+  plansHtml(r){
+    const db=Store.db; const b=Reco.bundles(db,r); const sel=db.reco_plan;
+    const card=(p,key,desc)=>{
+      const active=sel===key;
+      return `<div class="section" style="${active?'border-color:var(--accent)':''}">
+        <div class="section-head"><div><h3>${p.name} plan ${active?badge('blue','Selected'):''}</h3><div class="desc">${desc}</div></div>
+        <button class="btn ${active?'':'sec'} sm" onclick="RecoUI.selectPlan('${key}')">${active?'Selected':'Select plan'}</button></div>
+        <div class="kv"><span class="k">Monthly allocation</span><span class="v">${fmtMoney(p.monthly)}</span></div>
+        <div class="kv"><span class="k">Weekly equivalent</span><span class="v">${fmtMoney2(p.weekly)}</span></div>
+        ${p.alloc.map(a=>`<div class="kv"><span class="k" style="padding-left:10px">\u2022 ${a.k}</span><span class="v">${fmtMoney(a.amt)}</span></div>`).join('')}
+        <hr class="sep">
+        <div class="kv"><span class="k">12-month outcome</span><span class="v">${fmtMoney(p.monthly*12)} directed</span></div>
+        <div class="kv"><span class="k">Main risks</span><span class="v">${p.risks}</span></div>
+        <div class="kv"><span class="k">Required behavior</span><span class="v">${p.behavior}</span></div>
+      </div>`;
+    };
+    return `<div class="banner"><span class="b-badge">Note</span> The most aggressive plan is not labelled “best.” Choose the plan that matches your risk tolerance and execution capacity.</div>
+      ${card(b.stability,'stability',b.stability.note)}
+      ${card(b.balanced,'balanced',b.balanced.note)}
+      ${card(b.accelerated,'accelerated',b.accelerated.note)}`;
+  },
+  selectPlan(k){ Store.db.reco_plan=k; Store.log('plan','Selected '+k+' plan'); Store.save(); toast(k.charAt(0).toUpperCase()+k.slice(1)+' plan selected','green'); App.render(); },
+
+  historyHtml(){
+    const runs=Store.db.reco_runs.slice().reverse();
+    if(!runs.length) return '<div class="section"><div class="empty">No saved runs yet.</div></div>';
+    return `<div class="section"><h3>Recommendation history</h3><div class="desc">Versioned record of finalized reviews (${runs.length})</div>
+      <div class="tbl-wrap"><table><thead><tr><th>When</th><th class="num">Free cash flow</th><th class="num">Emerg. mo</th><th class="num">Data quality</th><th class="num">Recos</th><th>Top action</th></tr></thead>
+      <tbody>${runs.map(x=>`<tr><td>${new Date(x.at).toLocaleString()}</td><td class="num">${fmtMoney(x.metrics.fcf)}</td><td class="num">${x.metrics.em.toFixed(1)}</td><td class="num">${x.dq.score.toFixed(0)}</td><td class="num">${x.recos.length}</td><td>${x.recos[0]?x.recos[0].action:'\u2014'}</td></tr>`).join('')}</tbody></table></div>
+    </div>`;
+  }
+};
+
+/* ---- Assistant grounding extension: answer explainability questions from the last run ---- */
+(function extendAssistant(){
+  if(typeof Assistant==='undefined') return;
+  const baseAnswer=Assistant.answer.bind(Assistant);
+  Assistant.answer=function(q){
+    const s=q.toLowerCase();
+    const r=App.recoResult;
+    if(/(recommend|action plan|what should i do|priorit|highest impact|top move)/.test(s)){
+      if(!r) return "Run a Financial Review in the Recommendation Center first — I answer these from the generated, data-traceable plan rather than guessing.";
+      const top=r.primary[0];
+      if(!top) return "The last review found no action needed — cash flow, reserves, debt, goals, and mortgage readiness were within thresholds.";
+      const V="<span class='tag v'>verified</span>", E="<span class='tag e'>estimate</span>";
+      return `${top.provisional?E:V} Highest priority (score ${top.score}/100): <b>${top.action}</b>.<div class='calc'>${top.calc.join('\n')}</div>Why it's first: ${top.why} Next step: ${top.firstAction}${top.provisional?" <b>Provisional — verify source data first.</b>":""}`;
+    }
+    if(/(data quality|verify|verified|confidence|data gate)/.test(s)){
+      const dq=DataQuality.score(Store.db);
+      return `<span class='tag v'>verified</span> Data-quality score is <b>${dq.score.toFixed(0)} (${dq.band})</b>.<div class='calc'>data_quality = completeness×0.35 + verification×0.30 + recency×0.20 + reconciliation×0.15\n= ${dq.completeness.toFixed(0)}×.35 + ${dq.verification.toFixed(0)}×.30 + ${dq.recency.toFixed(0)}×.20 + ${dq.reconciliation.toFixed(0)}×.15 = ${dq.score.toFixed(0)}</div>${dq.sufficientForMajor?'Sufficient for major decisions.':'Below 60 — definitive mortgage/consolidation/forecast advice is withheld until you: '+dq.gaps.join(' ')}`;
+    }
+    if(/(what changed|since last|previous run)/.test(s)){
+      const runs=Store.db.reco_runs; if(runs.length<2) return "I need at least two saved reviews to compare. Run another Financial Review after your next change.";
+      const cur=runs[runs.length-1], prev=runs[runs.length-2];
+      return `<span class='tag v'>verified</span> Since the previous run: free cash flow ${fmtMoney(prev.metrics.fcf)} → <b>${fmtMoney(cur.metrics.fcf)}</b>, emergency months ${prev.metrics.em.toFixed(1)} → <b>${cur.metrics.em.toFixed(1)}</b>, data quality ${prev.dq.score.toFixed(0)} → <b>${cur.dq.score.toFixed(0)}</b>.`;
+    }
+    return baseAnswer(q);
+  };
+  // add a suggestion chip
+  const oldSuggest=Assistant.suggest.bind(Assistant);
+  Assistant.suggest=function(){ oldSuggest();
+    const el=document.getElementById('asstSuggest'); if(el && !/highest-impact recommendation/.test(el.innerHTML)){ const b=document.createElement('button'); b.textContent='Explain my top recommendation'; b.onclick=()=>Assistant.ask('What is my highest-impact recommendation?'); el.appendChild(b); }
+  };
+})();
+
+</script>
+<script>
+/* ===== simple.js (inlined) ===== */
+/* ============================================================
+   SIMPLE MODE + ENHANCED RECOMMENDATIONS  (extension module)
+   Appended last. Adds a plain-language Home view, a Simple/Advanced
+   toggle, and four new reasoning layers on top of the existing engine:
+   one-number guidance, effort ranking, dollarized do-nothing cost,
+   and milestone framing. Removes nothing; every existing view,
+   formula, and control is preserved.
+   ============================================================ */
+'use strict';
+
+/* ---------- mode state ---------- */
+App.mode = (function(){ try{ return localStorage.getItem('fdp::mode')||'simple'; }catch(e){ return 'simple'; } })();
+/* ---- Simple Mode configurable thresholds (math unchanged; only when colors/verdict flip) ---- */
+(function initSimpleThresholds(){
+  const s=Store.db.settings;
+  if(!s.simple){
+    s.simple={ margin_thin_pct:5, reserve_stable_months:3, reserve_min_months:1, coverage_floor:1.0 };
+    Store.save();
+  }
+})();
+function ST(){ return Store.db.settings.simple; }
+function setMode(m){ App.mode=m; try{ localStorage.setItem('fdp::mode',m); }catch(e){}
+  RecoUI2.reshapeNav();
+  App.go(m==='simple'?'home':(App.cur==='home'?'overview':App.cur));
+}
+
+/* ---------- plain-language label map (same math, human words) ---------- */
+const PLAIN = {
+  'Free cash flow':'Money left over each month',
+  'Total monthly expenses':'What you spend each month',
+  'Net monthly income':'Money coming in',
+  'Savings rate':'Share of income you save',
+  'Emergency-fund months':'Months you could cover with no income',
+  'Total debt':'Everything you owe',
+  'Debt-to-income':'Share of income going to debt',
+  'Net worth':'What you own minus what you owe',
+  'Budget utilization':'How much of your budget you used'
+};
+
+/* ============================================================
+   ENHANCEMENT LAYER — enrich each recommendation
+   ============================================================ */
+const Enhance = {
+  // effort: 0 (trivial) .. 100 (hard). Derived from feasibility + action nature.
+  effort(x){
+    let e = 100 - x.dims.feasibility;                 // low feasibility => more effort
+    if(/subscription|recurring|cancel/i.test(x.action)) e = Math.min(e, 15);   // one click
+    if(/autopay|automate|move \$|reduce .* by/i.test(x.firstAction||'')) e = Math.min(e, 30);
+    if(/income|negotiate|refinanc|renegotiat/i.test(x.action)) e = Math.max(e, 65); // slow/external
+    if(/verify|reconcile|approve/i.test(x.action)) e = Math.min(e, 25);
+    return Math.max(5, Math.min(100, Math.round(e)));
+  },
+  effortLabel(e){ return e<=25?'Easy':e<=55?'Moderate':'Takes effort'; },
+
+  // dollarized monthly cost of doing nothing
+  doNothingCost(db,x){
+    const a=db.settings.assumptions;
+    if(/high-interest debt|debt-highapr/i.test(x.area+ x.key)){
+      // interest accruing this month on the targeted balance
+      const d=Calc.byType(db,'debt').find(c=>x.key.includes(c.id)) || Calc.byType(db,'debt').slice().sort((p,q)=>(+q.apr)-(+p.apr))[0];
+      if(d) return {amt:(+d.balance)*(+d.apr)/100/12, note:`~${fmtMoney2((+d.balance)*(+d.apr)/100/12)} in interest accrues this month on ${d.name}.`};
+    }
+    if(/cash-flow|essential/i.test(x.area)) return {amt:Math.abs(x.monthly), note:`The ${fmtMoney(Math.abs(x.monthly))} monthly shortfall keeps draining savings.`};
+    if(/emergency/i.test(x.area)) return {amt:0, note:`You stay exposed — one surprise could force high-interest borrowing.`};
+    if(/recurring/i.test(x.area)) return {amt:Math.abs(x.monthly), note:`You keep paying ${fmtMoney2(Math.abs(x.monthly))}/mo for services you may not use.`};
+    if(/goal/i.test(x.area)) return {amt:0, note:`The goal slips past its target date at today's pace.`};
+    if(/mortgage/i.test(x.area)) return {amt:0, note:`Home qualification and safety margin stay below guide.`};
+    return {amt:0, note:`The issue carries into next month unchanged.`};
+  },
+
+  // milestone framing — a felt target instead of a ratio
+  milestone(db,x){
+    const ess=RecoData.essentialExpenses(db), liquid=RecoData.liquidEmergency(db);
+    if(/emergency/i.test(x.area)){
+      const oneMonth=ess; const toNext=Math.max(0, oneMonth*Math.ceil(liquid/oneMonth+0.0001) - liquid);
+      const fcf=Calc.monthlySurplus(db);
+      const weeks = fcf>0? Math.ceil(toNext/ (fcf/4.33)) : null;
+      return `You're ${fmtMoney(toNext)} from your next full month of safety${weeks?` — about ${weeks} weeks at your current pace`:''}.`;
+    }
+    if(/debt-highapr|high-interest/i.test(x.area+x.key)){
+      const d=Calc.byType(db,'debt').find(c=>x.key.includes(c.id)) || Calc.byType(db,'debt').slice().sort((p,q)=>(+q.apr)-(+p.apr))[0];
+      if(d) return `Clearing ${d.name} frees ${fmtMoney(d.minimum||d.budgeted)}/mo you can then send anywhere.`;
+    }
+    if(/goal/i.test(x.area)){
+      const g=db.goals.find(gg=>x.key.includes(gg.id));
+      if(g){ const gc=Calc.goalCompute(db,g); return `${gc.progress.toFixed(0)}% of the way to “${g.name}.” Next milestone: ${fmtMoney(g.current+ (g.target-g.current)*0.25)}.`; }
+    }
+    return null;
+  },
+
+  // the single plain instruction — one number, one move
+  oneNumber(db,x){
+    if(/cash-flow|essential/i.test(x.area)){
+      const cut=RecoData.reducibleCats(db)[0];
+      if(cut) return `Move ${fmtMoney(Math.min(Math.abs(x.monthly),(+cut.budgeted)*0.5))} out of ${cut.name} to close your shortfall.`;
+      return `Free up ${fmtMoney(Math.abs(x.monthly))} this month to get back to positive.`;
+    }
+    if(/high-interest debt|debt-highapr/i.test(x.area+x.key)){
+      const extra=Math.max(0, Math.round(-x.monthly));
+      const d=Calc.byType(db,'debt').find(c=>x.key.includes(c.id)) || Calc.byType(db,'debt').slice().sort((p,q)=>(+q.apr)-(+p.apr))[0];
+      if(d && extra>0) return `Put an extra ${fmtMoney(extra)} on ${d.name} this month — it's your highest-return move.`;
+      if(d) return `Keep paying ${d.name}'s minimum until your reserve is rebuilt, then attack it.`;
+    }
+    if(/emergency/i.test(x.area)) return `Auto-transfer ${fmtMoney(Math.abs(x.monthly))} to savings on payday.`;
+    if(/recurring/i.test(x.area)) return `Cancel one unused subscription to recover ${fmtMoney2(Math.abs(x.monthly))}/mo.`;
+    if(/goal/i.test(x.area)) return `Add ${fmtMoney(Math.abs(x.monthly))}/mo, or push the date out — your choice.`;
+    if(/mortgage/i.test(x.area)) return `Focus on one lever: lower the target price or clear a debt before buying.`;
+    if(/variance/i.test(x.area)) return `Cap the over-budget category next month and watch it once.`;
+    if(/data quality|data-quality/i.test(x.area)) return `Approve your pending records so the numbers can be trusted.`;
+    return x.firstAction||'Take the first step listed on the card.';
+  },
+
+  enrich(db,r){
+    r.all.forEach(x=>{
+      x.effort=this.effort(x);
+      x.effortLabel=this.effortLabel(x.effort);
+      x.doNothing=this.doNothingCost(db,x);
+      x.milestone=this.milestone(db,x);
+      x.oneNumber=this.oneNumber(db,x);
+      // easy-win score: high impact per unit effort
+      x.easyWin = (x.dims.impact) / Math.max(10,x.effort);
+    });
+    return r;
+  }
+};
+
+/* ============================================================
+   SIMPLE MODE — Home view
+   ============================================================ */
+Views.home = function(){
+  const db=Store.db;
+  const ni=Calc.netIncome(db), out=Calc.totalBudgetedOutflow(db), left=Calc.monthlySurplus(db);
+  const ess=RecoData.essentialExpenses(db), liquid=RecoData.liquidEmergency(db);
+  const em = ess? liquid/ess : 0;
+  const ecr = (ess+RecoData.minDebtPayments(db))? ni/(ess+RecoData.minDebtPayments(db)) : 9;
+  // health verdict
+  const st=ST();
+  let verdict, vclass, vwhy;
+  if(left<0 || ecr<st.coverage_floor){ verdict='Needs attention'; vclass='red'; vwhy='You are spending more than you bring in.'; }
+  else if(em<st.reserve_stable_months || left/ni<st.margin_thin_pct/100){ verdict='Doing okay, one thing to watch'; vclass='amber'; vwhy='Your day-to-day is covered, but your safety cushion is thin.'; }
+  else { verdict='You are stable'; vclass='green'; vwhy='Income covers your life with room to spare.'; }
+
+  // top opportunity (run engine silently for the home card)
+  let r=App.recoResult;
+  if(!r){ r=Enhance.enrich(db, Reco.build(db)); }
+  else if(!r.all[0] || r.all[0].effort===undefined){ Enhance.enrich(db,r); }
+  const top = r.all.slice().sort((a,b)=>(a.rankTier-b.rankTier)||(b.score-a.score))[0];
+  const easy = r.all.slice().filter(x=>x.effort<=30 && x!==top).sort((a,b)=>b.easyWin-a.easyWin).slice(0,2);
+
+  const bar=(label,amt,color,pct)=>`<div style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${label}</span><span class="mono" style="font-family:var(--mono)">${fmtMoney(amt)}</span></div>
+    <div class="bar-track" style="height:12px"><div class="bar-fill ${color}" style="width:${Math.max(3,Math.min(100,pct))}%"></div></div></div>`;
+  const maxv=Math.max(ni,out,Math.abs(left),1);
+
+  const dq=DataQuality.score(db);
+
+  return `
+  ${syntheticNote}
+  <div class="section" style="border-left:3px solid var(--${vclass}-bd)">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span class="badge ${vclass}" style="font-size:13px;padding:6px 14px">${verdict}</span>
+      <div style="font-size:15px;color:var(--text)">${vwhy}</div>
+    </div>
+    <div class="mini" style="margin-top:8px">Plain-language view. Want the full detail and every ratio? <a href="#" onclick="setMode('advanced');return false" style="color:var(--accent)">Switch to Advanced</a>.</div>
+  </div>
+
+  <div class="two-col">
+    <div class="section">
+      <h3>Money in, out, and left</h3>
+      <div class="desc">The whole picture in three bars</div>
+      ${bar('Money coming in', ni, 'green', ni/maxv*100)}
+      ${bar('Money going out', out, 'amber', out/maxv*100)}
+      ${bar(left>=0?'Money left over':'Shortfall', left, left>=0?'green':'red', Math.abs(left)/maxv*100)}
+      <button class="btn ghost sm" onclick="RecoUI2.showMath()" style="margin-top:6px">Show the math</button>
+    </div>
+
+    <div class="section" style="border:1px solid var(--accent2)">
+      <h3>Do this next</h3>
+      <div class="desc">Your single highest-impact move right now</div>
+      ${top? `
+      <div style="font-size:16px;color:var(--text);font-weight:600;margin:6px 0 10px">${top.oneNumber}</div>
+      <div class="kv"><span class="k">Why</span><span class="v" style="text-align:right;max-width:60%">${top.why}</span></div>
+      <div class="kv"><span class="k">If you do nothing</span><span class="v" style="color:var(--amber)">${top.doNothing.note}</span></div>
+      <div class="kv"><span class="k">Effort</span><span class="v">${badge(top.effort<=25?'green':top.effort<=55?'amber':'red',top.effortLabel)}</span></div>
+      ${top.milestone?`<div class="kv"><span class="k">Milestone</span><span class="v" style="text-align:right;max-width:60%">${top.milestone}</span></div>`:''}
+      <div class="btnrow" style="margin-top:12px">
+        <button class="btn sm" onclick="setMode('advanced');App.go('recommendations');RecoUI.run&&RecoUI.run()">See full plan</button>
+        <button class="btn ghost sm" onclick="Assistant.toggle();Assistant.ask('What is my highest-impact recommendation?')">Ask why</button>
+      </div>` : '<div class="empty">Nothing urgent — you are on track.</div>'}
+    </div>
+  </div>
+
+  ${easy.length?`<div class="section">
+    <h3>Quick wins</h3>
+    <div class="desc">Small moves, low effort, real payback</div>
+    ${easy.map(x=>`<div class="kv"><span class="k">${badge('green',x.effortLabel)} ${x.oneNumber}</span><span class="v">${x.annual?fmtMoney(Math.abs(x.annual))+'/yr':''}</span></div>`).join('')}
+  </div>`:''}
+
+  <div class="section">
+    <h3>Your safety cushion</h3>
+    <div class="desc">${PLAIN['Emergency-fund months']}</div>
+    <div style="display:flex;align-items:baseline;gap:10px"><div style="font-family:var(--mono);font-size:30px;font-weight:600;color:${em>=ST().reserve_stable_months?'var(--green)':em>=ST().reserve_min_months?'var(--amber)':'var(--red)'}">${em.toFixed(1)}</div><div style="color:var(--text2)">months covered</div></div>
+    <div class="bar-track" style="margin-top:8px"><div class="bar-fill ${em>=ST().reserve_stable_months?'green':em>=ST().reserve_min_months?'amber':'red'}" style="width:${Math.min(100,em/Math.max(1,ST().reserve_stable_months*2)*100)}%"></div></div>
+    <div class="mini" style="margin-top:6px">${Enhance.milestone(db,{area:'emergency',key:'em'})||''}</div>
+  </div>
+
+  ${dq.score<75?`<div class="banner"><span class="b-badge">Heads up</span> Some figures still need checking (data quality ${dq.score.toFixed(0)}). ${dq.gaps[0]||''} <a href="#" onclick="setMode('advanced');App.go('recommendations');return false" style="color:var(--accent)">Review</a></div>`:''}
+
+  <div class="section">
+    <button class="btn sec" onclick="RecoUI2.walkthrough()">Walk me through my money</button>
+    <button class="btn ghost" onclick="RecoUI2.editThresholds()" style="margin-left:8px">Adjust my thresholds</button>
+    <span class="mini" style="margin-left:10px">A guided review, or set what counts as green/amber/red for you.</span>
+  </div>`;
+};
+Views._after_home=function(){};
+
+/* ============================================================
+   Simple-mode plumbing: nav reshape, toggle, math modal, walkthrough
+   ============================================================ */
+const SIMPLE_NAV_IDS = ['home','budget','goals','recommendations'];
+
+const RecoUI2 = {
+  reshapeNav(){
+    // rebuild nav honoring mode; add Home + toggle. Never destroys NAV data.
+    if(!NAV.find(n=>n.id==='home')){
+      NAV.unshift({id:'home', label:'Home', sub:'Your money in plain language', ico:'M3 11l9-8 9 8 M5 10v10h14V10'});
+    }
+    const nav=document.getElementById('nav');
+    const items = App.mode==='simple' ? NAV.filter(n=>SIMPLE_NAV_IDS.includes(n.id)) : NAV;
+    nav.innerHTML = items.map(n=>`<button data-v="${n.id}" onclick="App.go('${n.id}')">
+      <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${n.ico}"/></svg>
+      <span>${n.label}</span></button>`).join('')
+      + `<div style="padding:10px 12px;margin-top:8px;border-top:1px solid var(--border)">
+           <div class="mini" style="margin-bottom:6px">View</div>
+           <div class="pill-tabs" style="width:100%">
+             <button class="${App.mode==='simple'?'active':''}" style="flex:1" onclick="setMode('simple')">Simple</button>
+             <button class="${App.mode==='advanced'?'active':''}" style="flex:1" onclick="setMode('advanced')">Advanced</button>
+           </div>
+         </div>`;
+    // re-highlight
+    document.querySelectorAll('#nav button[data-v]').forEach(b=>b.classList.toggle('active',b.dataset.v===App.cur));
+  },
+
+  editThresholds(){
+    const st=ST();
+    const body=`
+      <div class="mini" style="margin-bottom:10px">These set only when Simple Mode shows green, amber, or red. Your actual numbers and formulas never change.</div>
+      <div class="form-grid">
+        <div class="field"><label class="fld">"Thin margin" warning below (% of income)</label><input id="st-margin" type="number" step="1" value="${st.margin_thin_pct}"></div>
+        <div class="field"><label class="fld">Safety cushion "stable" at (months)</label><input id="st-stable" type="number" step="0.5" value="${st.reserve_stable_months}"></div>
+        <div class="field"><label class="fld">Safety cushion "critical" below (months)</label><input id="st-min" type="number" step="0.5" value="${st.reserve_min_months}"></div>
+        <div class="field"><label class="fld">Essential-coverage floor (1.0 = income just covers essentials)</label><input id="st-cov" type="number" step="0.05" value="${st.coverage_floor}"></div>
+      </div>`;
+    modal('Adjust my thresholds', body, ()=>{
+      st.margin_thin_pct=parseFloat(val('st-margin'))||st.margin_thin_pct;
+      st.reserve_stable_months=parseFloat(val('st-stable'))||st.reserve_stable_months;
+      st.reserve_min_months=parseFloat(val('st-min'))||st.reserve_min_months;
+      st.coverage_floor=parseFloat(val('st-cov'))||st.coverage_floor;
+      Store.db.settings.updated_at=nowISO();
+      Store.log('settings','Adjusted Simple Mode thresholds');
+      Store.save(); toast('Thresholds updated','green'); App.render();
+    }, [{label:'Reset defaults',cls:'sec',fn:()=>{ Store.db.settings.simple={margin_thin_pct:5,reserve_stable_months:3,reserve_min_months:1,coverage_floor:1.0}; Store.log('settings','Reset Simple Mode thresholds'); Store.save(); closeModal(); toast('Reset to defaults','amber'); App.render(); }}]);
+  },
+
+  showMath(){
+    const db=Store.db;
+    const ni=Calc.netIncome(db), ex=Calc.totalExpenses(db), d=Calc.debtPayments(db), sv=Calc.plannedSavings(db), left=Calc.monthlySurplus(db);
+    modal('Show the math', `
+      <div class="calc" style="font-family:var(--mono);font-size:12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;white-space:pre-wrap;color:var(--text2)">money_left = income − expenses − debt − savings
+= ${fmtMoney(ni)} − ${fmtMoney(ex)} − ${fmtMoney(d)} − ${fmtMoney(sv)}
+= ${fmtMoney(left)}</div>
+      <div class="mini" style="margin-top:8px">These are your verified budget figures. Available credit is never counted as income.</div>`, null, []);
+  },
+
+  walkthrough(){
+    const db=Store.db; const r=App.recoResult||Enhance.enrich(db,Reco.build(db));
+    const ni=Calc.netIncome(db), left=Calc.monthlySurplus(db), ess=RecoData.essentialExpenses(db), liquid=RecoData.liquidEmergency(db);
+    const em=ess?liquid/ess:0;
+    const top=r.all.slice().sort((a,b)=>(a.rankTier-b.rankTier)||(b.score-a.score))[0];
+    const steps=[
+      {q:'First, are you living within your means?', a: left>=0? `Yes. You keep ${fmtMoney(left)} after everything each month.` : `Not yet. You're short ${fmtMoney(-left)} a month.`, ok:left>=0},
+      {q:'Do you have a safety cushion?', a: em>=3? `Yes — about ${em.toFixed(1)} months covered.` : `Partly — ${em.toFixed(1)} months. Aim for at least 3.`, ok:em>=3},
+      {q:'Is expensive debt under control?', a: (()=>{const hi=Calc.byType(db,'debt').slice().sort((x,y)=>(+y.apr)-(+x.apr))[0]; return hi&&+hi.apr>=15? `Watch ${hi.name} at ${(+hi.apr).toFixed(1)}% — it's your costliest.` : 'No high-rate debt flagged.';})(), ok:!(Calc.byType(db,'debt').some(c=>+c.apr>=15))},
+      {q:'So what should you do next?', a: top? top.oneNumber : 'Keep going — nothing urgent.', ok:true, final:true}
+    ];
+    const body=steps.map((s,i)=>`<div style="margin-bottom:14px">
+      <div style="font-weight:600;color:var(--text)">${i+1}. ${s.q}</div>
+      <div style="color:var(--text2);margin-top:3px">${badge(s.final?'blue':s.ok?'green':'amber',s.final?'Next step':s.ok?'Good':'Watch')} ${s.a}</div>
+    </div>`).join('');
+    modal('Walk me through my money', body, null, [{label:'See full plan',cls:'sec',fn:()=>{closeModal();setMode('advanced');App.go('recommendations');}}]);
+  }
+};
+
+/* ---------- hook engine run to enrich results ---------- */
+(function hookRun(){
+  if(typeof RecoUI==='undefined'||!RecoUI.run) return;
+  const origRun=RecoUI.run.bind(RecoUI);
+  RecoUI.run=function(){ origRun(); if(App.recoResult) Enhance.enrich(Store.db,App.recoResult); App.render(); };
+})();
+
+/* ---------- enrich the advanced action cards with the new fields ---------- */
+(function extendCards(){
+  if(typeof RecoUI==='undefined'||!RecoUI.card) return;
+  const origCard=RecoUI.card.bind(RecoUI);
+  RecoUI.card=function(x,rank){
+    if(x.effort===undefined) Enhance.enrich(Store.db, App.recoResult||{all:[x]});
+    let html=origCard(x,rank);
+    // inject a plain-language strip right after the opening section div
+    const strip=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 12px">
+      ${badge(x.effort<=25?'green':x.effort<=55?'amber':'red','Effort: '+x.effortLabel)}
+      ${x.doNothing&&x.doNothing.amt>0?badge('amber','Do nothing: '+fmtMoney2(x.doNothing.amt)+'/mo lost'):''}
+      ${x.easyWin>=6?badge('green','Quick win'):''}
+    </div>
+    <div class="kv"><span class="k">In plain terms</span><span class="v" style="text-align:right;max-width:65%">${x.oneNumber}</span></div>`;
+    // place strip after first </div> following the section-head close — simplest: after the h3 desc block.
+    html=html.replace('</div>\n      </div>', '</div>\n      </div>'+strip);
+    return html;
+  };
+})();
+
+/* ---------- keep nav + pills correct on every navigation ---------- */
+(function wrapGo(){
+  const origGo=App.go.bind(App);
+  App.go=function(id){ origGo(id); try{ RecoUI2.reshapeNav(); }catch(e){} };
+})();
+
+/* ---------- boot the simple layer ---------- */
+(function bootSimple(){
+  try{ RecoUI2.reshapeNav(); }catch(e){}
+  if(App.mode==='simple'){ try{ App.go('home'); }catch(e){} }
+})();
+
+</script>
+<script>
+/* ===== borrowing.js (inlined) ===== */
+/* ============================================================
+   BORROWING READINESS  (extension module)
+   Appended last. Generalizes the loan engine beyond mortgages to
+   auto, personal, and student loans. Reuses Calc.pmt. The existing
+   Mortgage Readiness view is preserved untouched as the "Mortgage"
+   preset (linked, not replaced). Each loan type carries its own
+   costs and its own sustainability lens; any modeled loan can be
+   added to the budget (confirm-gated) so it flows into the existing
+   DTI, cash-flow, and recommendation engine.
+   ============================================================ */
+'use strict';
+
+/* ---- loan-type presets: what differs between financed purchases ---- */
+const LOAN_TYPES = {
+  auto: {
+    label:'Auto loan', principalLabel:'Vehicle price', termDefault:6, rateDefault:0.079,
+    dpLabel:'Down payment / trade-in', lens:'personal',
+    carrying:[
+      {key:'insurance_annual', label:'Auto insurance (annual)', def:1560},
+      {key:'registration_annual', label:'Registration & fees (annual)', def:220},
+      {key:'maintenance_annual', label:'Maintenance & repairs (annual)', def:900}
+    ],
+    note:'Front-end DTI does not apply to a vehicle. Judged by back-end DTI and payment-to-income.'
+  },
+  personal: {
+    label:'Personal loan', principalLabel:'Loan amount', termDefault:4, rateDefault:0.119,
+    dpLabel:'Upfront paid (if any)', lens:'personal',
+    carrying:[],
+    note:'Unsecured — no carrying costs beyond the payment. Judged by back-end DTI.'
+  },
+  student: {
+    label:'Student loan', principalLabel:'Amount borrowed', termDefault:10, rateDefault:0.055,
+    dpLabel:'Upfront paid (if any)', lens:'personal',
+    carrying:[],
+    note:'Judged by back-end DTI. Deferment/subsidy not modeled — planning estimate only.'
+  }
+};
+
+/* ---- borrowing calc: shared amortization + type-specific costs + lens ---- */
+const Borrow = {
+  compute(db, type, inp){
+    const t=LOAN_TYPES[type];
+    const principal=Math.max(0, (+inp.principal||0) - (+inp.down||0));
+    const pi=Calc.pmt(principal, +inp.rate, +inp.term_years);
+    // carrying costs -> monthly
+    let carryMonthly=0; const carryLines=[];
+    (t.carrying||[]).forEach(c=>{ const v=+inp[c.key]||0; carryMonthly+=v/12; carryLines.push({label:c.label, monthly:v/12}); });
+    const fullMonthly = pi + carryMonthly;
+    // total interest over life
+    const totalPaid = pi*(+inp.term_years*12);
+    const totalInterest = Math.max(0, totalPaid - principal);
+    // sustainability lens (personal): impact on existing DTI + cash flow
+    const netIncome=Calc.netIncome(db);
+    const grossIncome=Calc.grossIncome(db);
+    const existingDebt=Calc.debtPayments(db);
+    const currentBackNet = netIncome? existingDebt/netIncome*100 : 0;
+    const newBackNet = netIncome? (existingDebt+pi)/netIncome*100 : 0;    // loan P&I adds to debt service
+    const newBackGross = grossIncome? (existingDebt+pi)/grossIncome*100 : 0;
+    const paymentToIncomeNet = netIncome? pi/netIncome*100 : 0;
+    const fcfNow = Calc.monthlySurplus(db);
+    const fcfAfter = fcfNow - fullMonthly;   // payment + carrying reduce free cash flow
+    // affordability: max principal that keeps back-end DTI <= target on NET income
+    const targetBack = (db.settings.assumptions.back_end_max||0.36); // reuse existing guide
+    const maxPaymentNet = Math.max(0, netIncome*targetBack - existingDebt);
+    const maxPrincipal = this.principalForPayment(maxPaymentNet, +inp.rate, +inp.term_years);
+    return {type, t, principal, pi, carryMonthly, carryLines, fullMonthly, totalInterest, totalPaid,
+      currentBackNet, newBackNet, newBackGross, paymentToIncomeNet, fcfNow, fcfAfter,
+      maxPaymentNet, maxPrincipal, targetBack, netIncome, grossIncome, existingDebt};
+  },
+  // invert amortization: principal affordable for a given payment
+  principalForPayment(payment, annualRate, years){
+    const r=annualRate/12, n=years*12;
+    if(payment<=0) return 0;
+    if(r===0) return payment*n;
+    return payment * (1-Math.pow(1+r,-n)) / r;
+  },
+  rateSensitivity(db,type,inp){
+    const rates=[-0.02,-0.01,0,0.01,0.02,0.03];
+    return rates.map(dr=>{ const c=this.compute(db,type,Object.assign({},inp,{rate:(+inp.rate)+dr})); return {rate:(+inp.rate)+dr, pi:c.pi, full:c.fullMonthly, back:c.newBackNet}; });
+  }
+};
+
+/* ---- default draft per type ---- */
+App.borrowType = App.borrowType || 'auto';
+App.borrowDraft = App.borrowDraft || {};
+function borrowDefaults(type){
+  const t=LOAN_TYPES[type];
+  const d={ principal: type==='auto'?32000:type==='personal'?12000:28000, down: type==='auto'?4000:0,
+            rate:t.rateDefault, term_years:t.termDefault };
+  (t.carrying||[]).forEach(c=> d[c.key]=c.def);
+  return d;
+}
+
+/* ============================================================
+   VIEW
+   ============================================================ */
+Views.borrowing=function(){
+  const db=Store.db;
+  const type=App.borrowType;
+  if(!App.borrowDraft[type]) App.borrowDraft[type]=borrowDefaults(type);
+  const inp=App.borrowDraft[type];
+  const t=LOAN_TYPES[type];
+  const c=Borrow.compute(db,type,inp);
+  const backStatus=(v)=>v<=36?'green':v<=43?'amber':'red';
+  const fld=(key,label,step,val)=>`<div class="field"><label class="fld">${label}</label><input type="number" step="${step||1}" value="${val}" oninput="App.borrowDraft['${type}']['${key}']=parseFloat(this.value)||0;App.render()"></div>`;
+  const kv=(k,v,color)=>`<div class="kv"><span class="k">${k}</span><span class="v" ${color?`style="color:${color}"`:''}>${v}</span></div>`;
+
+  const typeTabs=Object.keys(LOAN_TYPES).map(k=>`<button class="${type===k?'active':''}" onclick="App.borrowType='${k}';App.render()">${LOAN_TYPES[k].label}</button>`).join('');
+
+  return `
+  ${syntheticNote}
+  <div class="banner"><span class="b-badge">Estimate</span> Borrowing figures are planning estimates, not a lender approval or credit decision. Adding a loan to your budget requires your confirmation.</div>
+
+  <div class="section">
+    <div class="section-head">
+      <div><h3>What are you financing?</h3><div class="desc">Each loan type uses the same payment math but its own costs and the right way to judge it</div></div>
+      <div class="pill-tabs">${typeTabs}</div>
+    </div>
+    <div class="banner info" style="margin:6px 0 0"><span class="b-badge" style="background:#0d2440;color:var(--accent);border-color:var(--accent2)">Mortgage</span>
+      Buying a home? The dedicated <a href="#" onclick="App.go('mortgage');return false" style="color:var(--accent)">Mortgage Readiness</a> screen models property tax, insurance, HOA, PMI, maintenance, and closing reserves in full.</div>
+  </div>
+
+  <div class="two-col">
+    <div class="section">
+      <h3>${t.label} inputs</h3>
+      <div class="form-grid">
+        ${fld('principal',t.principalLabel,500,inp.principal)}
+        ${fld('down',t.dpLabel,250,inp.down)}
+        ${fld('rate','Interest rate (e.g. 0.079)',0.001,inp.rate)}
+        ${fld('term_years','Term (years)',1,inp.term_years)}
+        ${(t.carrying||[]).map(cc=>fld(cc.key,cc.label,50,inp[cc.key])).join('')}
+      </div>
+      <div class="mini" style="margin-top:8px">${t.note}</div>
+    </div>
+
+    <div class="section">
+      <h3>Monthly cost</h3>
+      ${kv('Principal &amp; interest',fmtMoney2(c.pi))}
+      ${c.carryLines.map(l=>kv(l.label,fmtMoney2(l.monthly))).join('')}
+      ${kv('Total monthly cost',fmtMoney2(c.fullMonthly),'var(--accent)')}
+      <hr class="sep">
+      ${kv('Total interest over life',fmtMoney(c.totalInterest))}
+      ${kv('Total of payments',fmtMoney(c.totalPaid))}
+      ${kv('Amount financed',fmtMoney(c.principal))}
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="section">
+      <h3>Can you sustain it?</h3>
+      <div class="desc">Personal lens: effect on your debt load and cash flow</div>
+      ${kv('Debt-to-income now (net)',fmtPct(c.currentBackNet), backStatus(c.currentBackNet)==='green'?'var(--green)':backStatus(c.currentBackNet)==='amber'?'var(--amber)':'var(--red)')}
+      ${kv('Debt-to-income with this loan',fmtPct(c.newBackNet), backStatus(c.newBackNet)==='green'?'var(--green)':backStatus(c.newBackNet)==='amber'?'var(--amber)':'var(--red)')}
+      <div class="mini">(existing debt + new payment) / net income</div>
+      ${kv('Payment-to-income',fmtPct(c.paymentToIncomeNet))}
+      <hr class="sep">
+      ${kv('Free cash flow now',fmtMoney(c.fcfNow))}
+      ${kv('Free cash flow after this loan',fmtMoney(c.fcfAfter), c.fcfAfter>=0?'var(--green)':'var(--red)')}
+      ${c.fcfAfter<0?'<div class="mini" style="color:var(--red)">This loan would push your monthly cash flow negative.</div>':''}
+    </div>
+    <div class="section">
+      <h3>How much could you afford?</h3>
+      <div class="desc">Keeping back-end DTI at or under ${(c.targetBack*100).toFixed(0)}% on net income</div>
+      ${kv('Max sustainable payment',fmtMoney2(c.maxPaymentNet))}
+      ${kv('Max amount financed',fmtMoney(c.maxPrincipal),'var(--accent)')}
+      <div class="mini">at ${(inp.rate*100).toFixed(2)}% over ${inp.term_years} years</div>
+      <hr class="sep">
+      <h3 style="font-size:12.5px;margin-top:6px">Payment by rate</h3>
+      <div id="borrowRateChart" style="height:180px"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div><h3>Add this loan to your plan</h3><div class="desc">Creates a debt line in your budget so it flows into your DTI, cash flow, goals, and recommendations</div></div>
+      <button class="btn" onclick="Borrow.addToBudget('${type}')">Add to budget</button>
+    </div>
+    <div class="mini">Requires confirmation. Nothing changes until you approve — consistent with every other verified-data change in the app.</div>
+  </div>`;
+};
+
+Views._after_borrowing=function(){
+  const db=Store.db, type=App.borrowType, inp=App.borrowDraft[type];
+  if(!inp||!window.Highcharts) return;
+  const sens=Borrow.rateSensitivity(db,type,inp);
+  Highcharts.chart('borrowRateChart',{
+    chart:{type:'column',backgroundColor:'transparent',style:{fontFamily:'var(--sans)'}},
+    title:{text:null},credits:{enabled:false},
+    xAxis:{categories:sens.map(s=>(s.rate*100).toFixed(2)+'%'),labels:{style:{color:'#adbac7'}},lineColor:'#30363d'},
+    yAxis:{title:{text:null},labels:{style:{color:'#adbac7'}},gridLineColor:'#21262d'},
+    legend:{enabled:false},
+    tooltip:{backgroundColor:'#161b22',borderColor:'#30363d',style:{color:'#e6edf3'},valuePrefix:'$'},
+    series:[{name:'Payment',data:sens.map(s=>Math.round(s.pi)),color:'#2f81f7'}]
+  });
+};
+
+/* ---- add modeled loan to budget as a debt category (confirm-gated) ---- */
+Borrow.addToBudget=function(type){
+  const db=Store.db, inp=App.borrowDraft[type], t=LOAN_TYPES[type];
+  const c=Borrow.compute(db,type,inp);
+  const name=t.label+' (modeled)';
+  if(!confirm(`Add "${name}" to your budget as a debt line of ${fmtMoney2(c.pi)}/mo (balance ${fmtMoney(c.principal)}, ${(inp.rate*100).toFixed(2)}% APR)? This changes your verified budget and will affect DTI, cash flow, and recommendations.`)) return;
+  db.budget.push({ id:uid('cat'), name, type:'debt', budgeted:Math.round(c.pi), balance:Math.round(c.principal),
+    apr:+(inp.rate*100).toFixed(2), minimum:Math.round(c.pi),
+    created_at:nowISO(), updated_at:nowISO(), source:'user', verification_status:'verified', user_id:USER_ID });
+  Store.log('borrowing', `Added ${name}: ${fmtMoney2(c.pi)}/mo, balance ${fmtMoney(c.principal)}, ${(inp.rate*100).toFixed(2)}% APR`);
+  Store.save();
+  toast(t.label+' added to budget','green');
+  // refresh recommendation result if one exists so the new debt is reflected
+  if(App.recoResult && typeof Reco!=='undefined'){ App.recoResult=Reco.build(db); if(typeof Enhance!=='undefined') Enhance.enrich(db,App.recoResult); }
+  App.render();
+};
+
+/* ============================================================
+   Wire into nav (both Simple and Advanced) — after Mortgage
+   ============================================================ */
+(function wireBorrowingNav(){
+  if(!NAV.find(n=>n.id==='borrowing')){
+    const idx=NAV.findIndex(n=>n.id==='mortgage');
+    const entry={id:'borrowing', label:'Borrowing Readiness', sub:'Loans of any kind — can you sustain it?', ico:'M3 10h18 M5 10v8h14v-8 M9 21V14h6v7 M12 3l7 5H5z'};
+    if(idx>=0) NAV.splice(idx+1,0,entry); else NAV.push(entry);
+  }
+  // include in simple-mode nav set if present
+  try{ if(typeof SIMPLE_NAV_IDS!=='undefined' && !SIMPLE_NAV_IDS.includes('borrowing')) SIMPLE_NAV_IDS.push('borrowing'); }catch(e){}
+  try{ if(typeof RecoUI2!=='undefined' && RecoUI2.reshapeNav) RecoUI2.reshapeNav(); else if(App.init) { /* fallback: rebuild base nav */ } }catch(e){}
+  // rebuild the base nav DOM if reshapeNav isn't controlling it
+  try{
+    const nav=document.getElementById('nav');
+    if(nav && (typeof App.mode==='undefined')){
+      nav.innerHTML=NAV.map(n=>`<button data-v="${n.id}" onclick="App.go('${n.id}')">
+        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${n.ico}"/></svg>
+        <span>${n.label}</span></button>`).join('');
+    }
+  }catch(e){}
+})();
+
+</script>
+</body>
+</html>
