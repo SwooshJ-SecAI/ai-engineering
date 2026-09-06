@@ -15,7 +15,7 @@
 
 ## Pattern categories checked (zero matches)
 Corporate domains, corporate email addresses, cloud account IDs and resource ARNs, enterprise
-profile identifiers, internal service/profile UUIDs, local filesystem session paths (C:\Users\...),
+profile identifiers, internal service/profile UUIDs, local filesystem session paths,
 internal project and employee names, physical addresses, phone patterns, the generating agent's
 internal name, QuickSight/Freshservice references, and personal handles.
 
