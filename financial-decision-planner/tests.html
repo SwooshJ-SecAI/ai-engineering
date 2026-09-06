@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Decision Planner — Test Harness</title>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--text:#e6edf3;--text2:#adbac7;--muted:#768390;--border:#30363d;--green:#3fb950;--red:#f85149;--amber:#d29922;--accent:#2f81f7;--mono:'SF Mono',ui-monospace,Consolas,monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:28px;max-width:1100px;margin:0 auto;font-size:14px}
+h1{font-size:20px;margin-bottom:4px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.summary{display:flex;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.pill{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 20px;min-width:120px}
+.pill .n{font-family:var(--mono);font-size:26px;font-weight:600}
+.pill .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+.pill.pass .n{color:var(--green)} .pill.fail .n{color:var(--red)}
+.group{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden}
+.group h2{font-size:13px;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.05em;color:var(--text2);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td{padding:8px 16px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.st{width:60px;font-family:var(--mono);font-weight:600}
+.st.p{color:var(--green)} .st.f{color:var(--red)}
+.nm{color:var(--text2)}
+.dt{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-align:right;white-space:nowrap}
+.inv{font-size:11px;color:var(--muted);font-style:italic}
+.err{color:var(--red);font-family:var(--mono);font-size:11px}
+</style>
+</head>
+<body>
+<h1>Financial Decision Planner — Test Harness</h1>
+<div class="sub">Loads the real engine (app.js, reco.js, borrowing.js) and runs known-answer, invariant, and smoke assertions in-browser. Open this file to run; results appear below.</div>
+<div class="summary" id="summary"></div>
+<div id="results"></div>
+
+<!-- Stubs so borrowing.js's nav-wiring IIFE and reco.js settings init do not throw without the UI layer -->
+<script>
+  window.App = { borrowType:'auto', borrowDraft:{}, recoResult:null, render:function(){}, go:function(){}, varMonth:null };
+  window.NAV = [{id:'mortgage'}];
+  window.Views = {};
+  window.SIMPLE_NAV_IDS = [];
+  window.RecoUI2 = { reshapeNav:function(){} };
+  // harmless document stubs are already real in a browser; nothing else needed
+</script>
+<!-- REAL ENGINE CODE UNDER TEST -->
+<script src="app.js"></script>
+<script src="reco.js"></script>
+<script src="borrowing.js"></script>
+
+<script>
+/* ---------------- tiny assertion framework ---------------- */
+const RESULTS=[]; let GROUP=null;
+function group(name){ GROUP={name,rows:[]}; RESULTS.push(GROUP); }
+function approx(a,b,tol){ return Math.abs(a-b)<=(tol==null?0.01:tol); }
+function check(name, pass, detail, invariant){
+  GROUP.rows.push({name, pass:!!pass, detail:detail||'', invariant:invariant||''});
+}
+function eq(name, actual, expected, tol, invariant){
+  const pass = (typeof expected==='number') ? approx(actual,expected,tol) : (actual===expected);
+  check(name, pass, `got ${fmt(actual)} · want ${fmt(expected)}`, invariant);
+}
+function truthy(name, val, invariant){ check(name, !!val, `got ${fmt(val)}`, invariant); }
+function fmt(v){ return typeof v==='number' ? (Math.round(v*100)/100).toString() : JSON.stringify(v); }
+
+/* ---------------- fresh synthetic dataset ---------------- */
+function fresh(){ Store.reset(false); return Store.db; }
+
+/* =========================================================
+   1. CALCULATION ENGINE — known-answer (pure functions)
+   ========================================================= */
+try{
+group('1 · Calculation engine — known answers (synthetic seed)');
+const db=fresh();
+eq('net income = sum of net (credit never counted)', Calc.netIncome(db), 6170, 0.5);
+eq('gross income', Calc.grossIncome(db), 8100, 0.5);
+eq('total expenses = fixed + variable', Calc.totalExpenses(db), 4005, 0.5);
+eq('debt payments', Calc.debtPayments(db), 1040, 0.5);
+eq('planned savings = savings + sinking', Calc.plannedSavings(db), 1665, 0.5);
+eq('monthly surplus (income−exp−debt−savings)', Calc.monthlySurplus(db), -540, 0.5,
+   'surplus formula');
+eq('debt-to-income %', Calc.dti(db), 16.86, 0.1);
+eq('emergency months (liquid savings / need)', Calc.emergencyMonths(db), 4.163, 0.05);
+eq('total debt (sum balances)', Calc.totalDebt(db), 30600, 1);
+eq('net worth (assets − debt)', Calc.netWorth(db), 18430, 1);
+}catch(e){ group('1 · Calculation engine (ERROR)'); check('module loaded', false, e.message); }
+
+/* =========================================================
+   2. LOAN / AMORTIZATION MATH + edge cases
+   ========================================================= */
+try{
+group('2 · Loan & amortization math');
+eq('P&I $280k @6.75% / 30y', Calc.pmt(280000,0.0675,30), 1816.07, 0.5,
+   'pmt = P·r/(1−(1+r)^−n)');
+eq('P&I 0% rate divides by n, not r (edge)', Calc.pmt(12000,0,4), 250, 0.01,
+   'zero-rate guard');
+eq('P&I $300k @6.75% / 30y (independent check)', Calc.pmt(300000,0.0675,30), 1945.79, 0.5);
+const db=fresh();
+const m=Calc.mortgage(db);
+truthy('mortgage() returns finite housing payment', isFinite(m.housing_payment));
+truthy('front-end DTI is a finite %', isFinite(m.front) && m.front>0);
+eq('back-end DTI = (housing+debt)/gross', m.back, (m.housing_payment+m.existing_debt)/m.gross*100, 0.1,
+   'back_end_DTI formula');
+}catch(e){ group('2 · Loan math (ERROR)'); check('module loaded', false, e.message); }
+
+/* =========================================================
+   3. EDGE CASES — division by zero, empty, extremes
+   ========================================================= */
+try{
+group('3 · Edge cases (no NaN / Infinity)');
+const db=fresh();
+db.income=[];  // zero income
+truthy('DTI with zero income is not NaN', !isNaN(Calc.dti(db)));
+truthy('surplus with zero income is finite', isFinite(Calc.monthlySurplus(db)));
+truthy('savings rate with zero income is not NaN', !isNaN(Calc.savingsRate(db)));
+const db2=fresh();
+const loanPmt=Calc.pmt(0,0.05,5);
+eq('zero principal → zero payment', loanPmt, 0, 0.01);
+const extremePmt = Calc.pmt(1000,5.0,1); // absurd 500% APR should still be finite
+truthy('extreme APR still finite', isFinite(extremePmt));
+}catch(e){ group('3 · Edge cases (ERROR)'); check('ran', false, e.message); }
+
+/* =========================================================
+   4. RECOMMENDATION ENGINE — invariants (judgment, not arithmetic)
+   ========================================================= */
+try{
+group('4 · Recommendation engine — safety invariants');
+const db=fresh();
+const r=Reco.build(db);
+truthy('review returns a result object', r && r.primary && r.all);
+check('no more than 5 primary recommendations', r.primary.length<=5,
+      `primary=${r.primary.length}`, 'max 5 primary');
+// seed runs a deficit → must NOT recommend optional investing/prepayment
+const badWhileDeficit = r.all.some(x=>/invest|prepay|discretionary (save|invest)/i.test(x.action) && !x.provisional);
+check('no optional investing/prepay while cash flow negative', !badWhileDeficit,
+      `surplus=${Calc.monthlySurplus(db)}`, 'never optimize before essentials covered');
+// every provisional reco must be labelled when confidence < 60
+const provisionalOK = r.all.every(x=> x.dims.confidence>=60 ? true : x.provisional===true);
+check('confidence < 60 always flagged Provisional', provisionalOK, '', 'provisional labelling');
+// ranking: a deficit/cash-flow item should outrank pure discretionary savings
+const topAreas = r.primary.slice(0,3).map(x=>x.area).join(', ');
+truthy('a stability/coverage item ranks in top 3', /cash|essential|reserve|debt|quality/i.test(topAreas), 'ranking order');
+check('scores are within 0–100', r.all.every(x=>x.score>=0&&x.score<=100), '', 'score bounds');
+}catch(e){ group('4 · Recommendation engine (ERROR)'); check('module loaded', false, e.message); }
+
+/* =========================================================
+   5. DATA-QUALITY GATE
+   ========================================================= */
+try{
+group('5 · Data-quality gate');
+const db=fresh();
+const dq=DataQuality.score(db);
+truthy('data_quality score in 0–100', dq.score>=0 && dq.score<=100);
+eq('weights sum correctly (completeness·.35+verif·.30+recency·.20+recon·.15)',
+   dq.completeness*0.35+dq.verification*0.30+dq.recency*0.20+dq.reconciliation*0.15, dq.score, 0.5,
+   'DQ formula');
+truthy('band string present', typeof dq.band==='string' && dq.band.length>0);
+truthy('sufficientForMajor is boolean', typeof dq.sufficientForMajor==='boolean');
+}catch(e){ group('5 · Data-quality gate (ERROR)'); check('module loaded', false, e.message); }
+
+/* =========================================================
+   6. GOALS
+   ========================================================= */
+try{
+group('6 · Goal calculations');
+const db=fresh();
+const g=db.goals[0];
+const gc=Calc.goalCompute(db,g);
+truthy('required_monthly is finite & ≥ 0', isFinite(gc.required_monthly) && gc.required_monthly>=0,
+       'required = (target−current−growth)/months');
+truthy('progress between 0 and 100', gc.progress>=0 && gc.progress<=100);
+eq('weekly equivalent = monthly·12/52', gc.weekly, gc.required_monthly*12/52, 0.5);
+// already-funded goal → required contribution floors at 0, not negative
+const db2=fresh(); db2.goals[0].current = db2.goals[0].target*2;
+const gc2=Calc.goalCompute(db2, db2.goals[0]);
+check('over-funded goal → required_monthly floored at 0', gc2.required_monthly>=0,
+      `got ${fmt(gc2.required_monthly)}`, 'no negative contribution');
+}catch(e){ group('6 · Goals (ERROR)'); check('module loaded', false, e.message); }
+
+/* =========================================================
+   7. BORROWING ENGINE (mortgage/auto/personal/student)
+   ========================================================= */
+try{
+group('7 · Borrowing engine');
+const db=fresh();
+const c=Borrow.compute(db,'auto',{principal:32000,down:4000,rate:0.079,term_years:6,insurance_annual:1560,registration_annual:220,maintenance_annual:900});
+eq('amount financed = price − down', c.principal, 28000, 1);
+truthy('monthly P&I finite & > 0', isFinite(c.pi) && c.pi>0, 'shared pmt engine');
+truthy('carrying costs folded into full monthly', c.fullMonthly>c.pi);
+truthy('back-end DTI with loan > without', c.newBackNet>c.currentBackNet, 'loan adds to debt service');
+truthy('max affordable principal finite', isFinite(c.maxPrincipal) && c.maxPrincipal>0);
+const p=Borrow.compute(db,'personal',{principal:12000,down:0,rate:0.119,term_years:4});
+eq('personal loan has no carrying cost', p.carryMonthly, 0, 0.01, 'unsecured: payment only');
+}catch(e){ group('7 · Borrowing engine (ERROR)'); check('module loaded', false, e.message); }
+
+/* =========================================================
+   8. STORAGE — round-trip & migration resilience
+   ========================================================= */
+try{
+group('8 · Storage & migration');
+const db=fresh();
+db.settings.display_name='ROUNDTRIP TEST';
+Store.save();
+Store.load();
+eq('state survives save→load round-trip', Store.db.settings.display_name, 'ROUNDTRIP TEST');
+// migration: strip a newer key, ensure lazy init backfills without crashing
+delete Store.db.reco_runs;
+truthy('missing reco_runs does not break a review', (function(){ try{ Reco.build(Store.db); return true; }catch(e){ return false; } })(),
+       'forward-compatible load');
+fresh(); // restore clean
+truthy('reset restores synthetic baseline', /synthetic/i.test(Store.db.settings.display_name));
+}catch(e){ group('8 · Storage (ERROR)'); check('ran', false, e.message); }
+
+/* ---------------- render ---------------- */
+(function render(){
+  let total=0, passed=0;
+  const res=document.getElementById('results');
+  RESULTS.forEach(g=>{
+    const div=document.createElement('div'); div.className='group';
+    let rows='';
+    g.rows.forEach(r=>{
+      total++; if(r.pass) passed++;
+      rows+=`<tr><td class="st ${r.pass?'p':'f'}">${r.pass?'PASS':'FAIL'}</td>
+        <td><div class="nm">${r.name}</div>${r.invariant?`<div class="inv">invariant: ${r.invariant}</div>`:''}</td>
+        <td class="dt ${r.pass?'':'err'}">${r.detail}</td></tr>`;
+    });
+    div.innerHTML=`<h2>${g.name}</h2><table>${rows}</table>`;
+    res.appendChild(div);
+  });
+  const failed=total-passed;
+  document.getElementById('summary').innerHTML=`
+    <div class="pill"><div class="n">${total}</div><div class="l">Total</div></div>
+    <div class="pill pass"><div class="n">${passed}</div><div class="l">Passed</div></div>
+    <div class="pill ${failed?'fail':''}"><div class="n">${failed}</div><div class="l">Failed</div></div>`;
+  document.title=`FDP Tests — ${passed}/${total} passing`;
+})();
+</script>
+</body>
+</html>
